@@ -6,7 +6,7 @@
 /*   By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 08:54:50 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/08/03 10:58:27 by bbousaad         ###   ########.fr       */
+/*   Updated: 2025/08/03 13:37:43 by bbousaad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,6 +140,20 @@ int handle_password(char *password)
 	return 0;
 }
 
+void handle_command(const std::string& message, int client_fd)
+{
+    std::string reponse;
+	
+	if(message == "1")
+	{
+		reponse = "48?!";
+		send(client_fd, reponse.c_str(), reponse.size(), 0); 
+	}
+	//en gros la je test pour recuperer une string du client pour 
+}
+
+
+
 int main(int argc, char **argv)
 {
 	struct sockaddr_in addr;
@@ -206,7 +220,7 @@ int main(int argc, char **argv)
    FD_SET(sockfd, &all_fds); // Ajoute le socket serveur
    int max_fd = sockfd;
    char buffer[42000];
-   
+
 	std::vector<int> clients;
 	//fd_set read_fds = all_fds; // Copie de l'ensemble principal
 	while(5)
@@ -248,22 +262,9 @@ int main(int argc, char **argv)
 			Si FD_ISSET(client_fd, &read_fds) → recv()
 			Si recv() == 0 (déconnexion) → close(client_fd) + retirer du clients.
 			*/
-		   int client_fd = clients[i];
-		   if (FD_ISSET(client_fd, &read_fds)) 
-		   {
-			   	int signal_serveur = recv(sockfd, buffer, sizeof(buffer), 0);
-			   	if (signal_serveur <= 0)
-			   	{
-				   	std::cout << "Main server close" << std::endl;
-				   	for (size_t i = 0; i < clients.size(); ++i)
-				   	{
-						close(client_fd);
-						FD_CLR(client_fd, &all_fds);
-						std::cout << "Client number : " << i << " ejected" << std::endl;
-					}
-					close(sockfd);
-					FD_CLR(sockfd, &all_fds);
-				}
+			int client_fd = clients[i];
+			if (FD_ISSET(client_fd, &read_fds)) 
+			{
 				//le client a envoye des donnees
 				int signal = recv(client_fd, buffer, sizeof(buffer), 0);
 				if (signal <= 0)
@@ -273,8 +274,14 @@ int main(int argc, char **argv)
 					FD_CLR(client_fd, &all_fds);
 					clients.erase(clients.begin() + i);
 					i--;
-				} else {
-					//faire les commande
+				} 
+				else
+				{
+					if (std::string(buffer) == "salut")
+					{
+						std::cout << "le client a envoyer salut" << std::endl;
+					}
+					//faire les commandes
 				}
 			}
 		}
