@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+        */
+/*   By: bech <bech@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:21:28 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/07/21 13:24:29 by bbousaad         ###   ########.fr       */
+/*   Updated: 2025/08/03 15:26:47 by bech             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,8 @@
 class Client
 {
     private:
+
+    std::string nickname;
     
     public:
     

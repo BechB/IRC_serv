@@ -3,19 +3,19 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+         #
+#    By: bech <bech@student.42.fr>                  +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/07/15 10:05:32 by bbousaad          #+#    #+#              #
-#    Updated: 2025/07/19 12:53:10 by bbousaad         ###   ########.fr        #
+#    Updated: 2025/08/03 15:27:11 by bech             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = ircserv
 
 SRC = main.cpp \
+		Server.cpp \
 		# Clien.cpp \
 		# Command.cpp \
-		# Server.cpp \
 
 OBJ = $(SRC:.cpp=.o)
 

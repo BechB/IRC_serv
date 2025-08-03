@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+        */
+/*   By: bech <bech@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 08:54:50 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/08/03 13:37:43 by bbousaad         ###   ########.fr       */
+/*   Updated: 2025/08/03 15:25:51 by bech             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@
 #include <unistd.h>   // pour close()
 #include <stdio.h>
 #include <vector>
+#include "Server.hpp"
 // #include "Command.hpp"
 // #include "Client.hpp"
 // #include "Server.hpp"
@@ -53,154 +54,17 @@ Si tu as une classe Server, c’est le bon endroit pour les stocker.
 
 */
 
-int    handle_port(char *port)
-{
-	char *endptr;
-	errno = 0;
-
-	long val = strtol(port, &endptr, 10);
-	if (errno == ERANGE || val > std::numeric_limits<int>::max() || val < std::numeric_limits<int>::min()) {
-		std::cout << "ERROR: check port format (int limits)" << std::endl;
-		return 1;
-	}
-	if (*endptr != '\0') {
-		std::cout << "ERROR: check port format" << std::endl;
-		return 1;
-	}
-	
-	if (val > 0)
-	{
-		if(val < 1024)
-		{
-			std::cout << "ERROR: reserved port" << std::endl;
-			return 1;
-		}
-		if (val > 65535)
-		{
-			std::cout << "ERROR: port out of TCP range, need port between 1024 and 65535" << std::endl;
-			return 1;
-		}
-	}
-	else
-	{
-		std::cout << "ERROR: port can't be negatif" << std::endl;
-		return 1;  
-	}
-	return val;
-}
-
-int handle_password(char *password)
-{
-	int upper_count = 0;
-	int lower_count = 0;
-	int digit_count = 0;
-	int special_count = 0;
-
-	for(int i = 0; password[i]; i++)
-	{
-		if(isspace(password[i]))
-		{
-			std::cout << "ERROR: no space allowed in password" << std::endl;
-			return 1;
-		}
-		if(isupper(password[i]))
-			upper_count++;
-		else if(islower(password[i]))
-			lower_count++;
-		else if(isdigit(password[i]))
-			digit_count++;
-		else
-			special_count++;
-	}
-	if(password[0] == '\0')
-	{
-		std::cout << "ERROR: empty password, not secure, maybe secure, maybe not" << std::endl;
-		return 1;
-	}
-	if(upper_count == 0)
-	{
-		std::cout << "ERROR: need at least one uppercase" << std::endl;
-		return 1;
-	}
-	if(lower_count == 0)
-	{
-		std::cout << "ERROR: need at least one lowercase" << std::endl;
-		return 1;
-	}
-	if(digit_count == 0)
-	{
-		std::cout << "ERROR: need at least one digit" << std::endl;
-		return 1;
-	}
-	if(special_count != 0)
-	{
-		std::cout << "ERROR: no special caractere allowed" << std::endl;
-		return 1;
-	}
-	return 0;
-}
-
-void handle_command(const std::string& message, int client_fd)
-{
-    std::string reponse;
-	
-	if(message == "1")
-	{
-		reponse = "48?!";
-		send(client_fd, reponse.c_str(), reponse.size(), 0); 
-	}
-	//en gros la je test pour recuperer une string du client pour 
-}
-
-
-
 int main(int argc, char **argv)
 {
-	struct sockaddr_in addr;
-//Pour l’utiliser dans une sockaddr_in, tu dois le convertir au format big-endian réseau
+	Server serv(argc, argv);
 
-
-	if (argc != 3)
-	{
-		std::cout << "ERROR: need 2 arguments" << std::endl;
+	if(serv.Routine() == 1)
 		return 1;
-	}
-	for(int i = 0; argv[1][i]; i++)
-	{
-		if(!std::isdigit(argv[1][i]))
-		{
-			std::cout << "ERROR: check port format" << std::endl;
-			return 1;
-		}
-
-	}
-	long port;
-	if(handle_port(argv[1]) == 1)
-		return 1;
-	else
-		port = handle_port(argv[1]);
-	if(handle_password(argv[2]) == 1)
-		return 1;
-
-	int sockfd;
-
-	addr.sin_port = htons(port);
-	addr.sin_family = AF_INET; //pour que mon socket soit defeini en tant que IPV4
-	inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd == -1)
-	{
-		std::cerr << "Error: socket creation failed" << std::endl;
-		return 1;
-	}
-	else
-		std::cout << "OK" << std::endl;
-	fcntl(sockfd, F_SETFL, O_NONBLOCK); //rend le socket non bloquant pour plusieurs client,
-	perror("");
-	bind(sockfd, ((struct sockaddr *)&addr), sizeof(addr));
-	perror("");
-	listen(sockfd, 15); //limiter le nombre de client qui peuvent se connecter (ici : 15)
-						//permet d ecouter
+	return 0;
+}
+	
+	
+	
 	/*
 	accept doit etre utiliser dans un for pour boucler sur les clients 
 	et dans un if() pour verifier si le socket sonne
@@ -215,79 +79,6 @@ int main(int argc, char **argv)
 	Écrire (writefds)
 	Ou s’ils ont une erreur (exceptfds)
 	*/
-   fd_set all_fds;
-   FD_ZERO(&all_fds);        // Vide le set
-   FD_SET(sockfd, &all_fds); // Ajoute le socket serveur
-   int max_fd = sockfd;
-   char buffer[42000];
-
-	std::vector<int> clients;
-	//fd_set read_fds = all_fds; // Copie de l'ensemble principal
-	while(5)
-	{
-		fd_set read_fds = all_fds;
-		int ready = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
-		//apres ca, read_fds ne contient que les socket pret
-		if(ready == -1)
-		{
-			std::cerr << "Error: request not accepted" << std::endl;
-			return 1;
-		}
-		//vrifier si le socket serveur est prêt
-		if (FD_ISSET(sockfd, &read_fds))
-		{
-			//nouveau client en attente
-			int client_fd = accept(sockfd, NULL, NULL);
-			
-			//ajouter le client au set et au container
-			FD_SET(client_fd, &all_fds);
-			if (client_fd > max_fd)
-			max_fd = client_fd;  //new max_fd
-			clients.push_back(client_fd);
-		}
-		
-		//vrifier les sockets des clients
-		for (size_t i = 0; i < clients.size(); ++i)
-		{
-			/*
-			fd_set est une structure fixe et limitée par FD_SETSIZE (souvent 1024).
-			Quand un client se déconnecte, tu dois facilement retirer son descripteur de la liste.
-			Avec un std::vector<int> ou std::set<int>, tu peux :
-			Ajouter un client_fd après accept().
-			Supprimer un client_fd quand recv() retourne 0 (client déconnecté).
-			Boucler sur tous les clients actifs pour remplir ton fd_set avant l’appel à select().
-			
-			Si FD_ISSET(server_fd, &read_fds) → accept() → clients.push_back(new_client_fd)
-			Pour chaque client_fd dans clients :
-			Si FD_ISSET(client_fd, &read_fds) → recv()
-			Si recv() == 0 (déconnexion) → close(client_fd) + retirer du clients.
-			*/
-			int client_fd = clients[i];
-			if (FD_ISSET(client_fd, &read_fds)) 
-			{
-				//le client a envoye des donnees
-				int signal = recv(client_fd, buffer, sizeof(buffer), 0);
-				if (signal <= 0)
-				{
-					std::cout << "Someoene are disconnected" << std::endl;
-					close(client_fd);
-					FD_CLR(client_fd, &all_fds);
-					clients.erase(clients.begin() + i);
-					i--;
-				} 
-				else
-				{
-					if (std::string(buffer) == "salut")
-					{
-						std::cout << "le client a envoyer salut" << std::endl;
-					}
-					//faire les commandes
-				}
-			}
-		}
-	}
-	perror("");
-
 	/*
 	Le socket serveur est maintenant passif. Il ne communique pas directement avec les clients.
 	C’est accept() qui crée un nouveau socket pour chaque client.
@@ -375,7 +166,3 @@ int main(int argc, char **argv)
 	gerer pplusieurs clients via ta structure d'evenement
 	*/
    
-
-	
-	
-}
