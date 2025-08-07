@@ -160,8 +160,8 @@ int Server::Routine()
     fd_set all_fds;
     FD_ZERO(&all_fds);        // Vide le set
     FD_SET(sockfd, &all_fds); // Ajoute le socket serveur
-   int max_fd = sockfd;
-   char buffer[4096];
+	int max_fd = sockfd;
+	char buffer[4096];
 
 	//fd_set read_fds = all_fds; // Copie de l'ensemble principal
 	while(5)
@@ -186,7 +186,6 @@ int Server::Routine()
 			max_fd = client_fd;  //new max_fd
 			clients.push_back(client_fd);
 		}
-		
 		//vrifier les sockets des clients
 		for (size_t i = 0; i < clients.size(); ++i)
 		{
@@ -222,6 +221,13 @@ int Server::Routine()
 				}
 				else
 				{
+					//enter password
+					//enter nickname
+					//enter user
+					//write(client_fd, "Enter nickname : ", 17);
+					//substr la commande
+					//attendre la bonne commande 
+					client[i]._nickname = "caca";
 					//le client doit ecrire son nickname des qu il se connect sinon erreur
 					//premiere commande = nickname
 					std::cout << "user number " << client_fd << " sent " << buffer << std::endl; 

@@ -32,23 +32,24 @@
 #include <unistd.h>   // pour close()
 #include <stdio.h>
 #include <vector>
+#include <cstring>
 #include "Client.hpp"
 
 class Server
 {
-    private:
-    
-    Client  client[50];
-    std::vector<int> clients;
-    std::string _password;
-    int _port;
-    int sockfd;
+	private:
+	
+		Client  client[50];
+		std::vector<int> clients;
+		std::string _password;
+		int _port;
+		int sockfd;
 
-    public:
-        Server(int argc, char **argv);
-        ~Server();
-        int Routine();
-        int    handle_password(char *password);
-        int    handle_port(char *port);
-    
+	public:
+		Server(int argc, char **argv);
+		~Server();
+		int Routine();
+		int    handle_password(char *password);
+		int    handle_port(char *port);
+	
 };

@@ -18,12 +18,14 @@
 #include <iostream>
 #include <poll.h>
 
+//struct au cas ou
+
 class Client
 {
     private:
 
-    std::string nickname;
-    
     public:
+    
+    std::string _nickname;
     
 };
