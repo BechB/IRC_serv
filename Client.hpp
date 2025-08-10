@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bech <bech@student.42.fr>                  +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:21:28 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/08/03 15:26:47 by bech             ###   ########.fr       */
+/*   Updated: 2025/08/10 15:22:43 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,14 +18,26 @@
 #include <iostream>
 #include <poll.h>
 
-//struct au cas ou
 
 class Client
 {
     private:
 
     public:
-    
-    std::string _nickname;
-    
+        int fd;
+        bool isRegistered;
+        std::string nickname;
+        std::string username;
+        std::vector<int> currentChannels;
+        
+        void setUsername(std::string& username);
+        void setNickname(std::string& nickname);
+        std::string getUsername();
+        std::string getNickname();
+        
+        // COMMANDS
+        void joinChannel(std::string& channelName);
+        void sendMsg();
+        void sendPrivateMsg();
+        void quitChannel();
 };
