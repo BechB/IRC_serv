@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bech <bech@student.42.fr>                  +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/08/03 15:51:47 by bech             ###   ########.fr       */
+/*   Updated: 2025/08/10 14:44:17 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -231,7 +231,7 @@ int Server::Routine()
 					//le client doit ecrire son nickname des qu il se connect sinon erreur
 					//premiere commande = nickname
 					std::cout << "user number " << client_fd << " sent " << buffer << std::endl; 
-					//faire les commandes
+					//faire les commandes partie ALEX
 				}
 			}
 		}
