@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bech <bech@student.42.fr>                  +#+  +:+       +#+        */
+/*   By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/08/03 15:51:47 by bech             ###   ########.fr       */
+/*   Updated: 2025/08/10 16:22:39 by bbousaad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -183,7 +183,7 @@ int Server::Routine()
 			//ajouter le client au set et au container
 			FD_SET(client_fd, &all_fds);
 			if (client_fd > max_fd)
-			max_fd = client_fd;  //new max_fd
+				max_fd = client_fd;  //new max_fd
 			clients.push_back(client_fd);
 		}
 		//vrifier les sockets des clients
@@ -221,20 +221,30 @@ int Server::Routine()
 				}
 				else
 				{
+					if(check_password(client_fd, buffer) == 0)
+						std::cout << "password correct" << std::endl;
 					//enter password
 					//enter nickname
 					//enter user
 					//write(client_fd, "Enter nickname : ", 17);
 					//substr la commande
 					//attendre la bonne commande 
-					client[i]._nickname = "caca";
-					//le client doit ecrire son nickname des qu il se connect sinon erreur
-					//premiere commande = nickname
+					client[i].nickname = "caca";
 					std::cout << "user number " << client_fd << " sent " << buffer << std::endl; 
 					//faire les commandes
 				}
 			}
 		}
 	}
-	perror("");
+}
+
+int	Server::check_password(int client_fd, std::string buffer)
+{
+	std::string try_pass = buffer.substr(0, strlen(buffer.c_str()) - 1);
+	write(client_fd, "Enter password : ", 17);
+	std::cout << "'" << try_pass << "'" << " : " << "'" << _password << "'" << std::endl;
+	if(try_pass == _password)
+		return 0;
+	else
+		return 1;
 }
