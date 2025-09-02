@@ -44,6 +44,12 @@ class Server
 		std::string _password;
 		int _port;
 		int sockfd;
+		int fd;
+		bool has_pass;
+		bool has_nick;
+		bool has_user;
+		std::string nickname;
+		std::string username;
 
 	public:
 		Server(int argc, char **argv);
