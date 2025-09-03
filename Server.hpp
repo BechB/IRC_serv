@@ -35,6 +35,8 @@
 #include <cstring>
 #include "Client.hpp"
 
+class Client;
+
 class Server
 {
 	private:

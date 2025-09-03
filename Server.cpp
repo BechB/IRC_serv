@@ -226,7 +226,8 @@ int Server::Routine()
 					std::cout << "user number " << client_fd << " sent " << message << std::endl;
 
 					if (!has_pass) {
-						if (message.rfind("PASS ", 0) == 0) { // commence par "PASS "
+						if (message.rfind("PASS ", 0) == 0)
+						{ // commence par "PASS "
 							std::string pass = message.substr(5, _password.size());
 							// std::cout << "PASSWORD CLIENT : " << pass << std::endl;
 							// std::cout << "PASSWORD SERVER : " << _password << std::endl;
@@ -252,22 +253,23 @@ int Server::Routine()
 						}
 						continue;
 					}
+					client[i].client_nickname = nickname;
 
 					if (!has_user) {
 						if (message.rfind("USER ", 0) == 0) {
 							username = message.substr(5);
 							has_user = true;
 							send(client_fd, "Welcome to the IRC server!\n", 28, 0);
-							std::cout << "Client " << client_fd << " connected as "
-									<< nickname << " (" << username << ")\n";
 						} else {
 							send(client_fd, "Please set your username with USER <username>\n", 46, 0);
 						}
 						continue;
 					}
+					client[i].client_username = username;
 
-					// Ici, le client est authentifié, on peut traiter ses vraies commandes IRC
-					std::cout << "[" << nickname << "] " << message << std::endl;
+					std::cout << "Client number " << i + 1 << " are connected" <<std::endl;
+					std::cout << "Nickname: " << client[i].client_nickname << std::endl;
+					std::cout << "Username: " << client[i].client_username << std::endl;
 					
 					/*
 					std::string message(buffer);

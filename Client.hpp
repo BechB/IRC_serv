@@ -26,7 +26,7 @@ class Client
 
     public:
     
-    std::string nickname;
-    std::string username;
+    std::string client_nickname;
+    std::string client_username;
     
 };
