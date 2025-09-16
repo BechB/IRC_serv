@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/08/10 14:44:17 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/08/10 16:22:39 by bbousaad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -183,7 +183,7 @@ int Server::Routine()
 			//ajouter le client au set et au container
 			FD_SET(client_fd, &all_fds);
 			if (client_fd > max_fd)
-			max_fd = client_fd;  //new max_fd
+				max_fd = client_fd;  //new max_fd
 			clients.push_back(client_fd);
 		}
 		//vrifier les sockets des clients
@@ -221,20 +221,87 @@ int Server::Routine()
 				}
 				else
 				{
+					std::string message(buffer);
+					message = message.substr(0, message.find("\r"));
+					std::cout << "user number " << client_fd << " sent " << message << std::endl;
+
+					if (!has_pass) {
+						if (message.rfind("PASS ", 0) == 0)
+						{ // commence par "PASS "
+							std::string pass = message.substr(5, _password.size());
+							// std::cout << "PASSWORD CLIENT : " << pass << std::endl;
+							// std::cout << "PASSWORD SERVER : " << _password << std::endl;
+							if (pass == _password) { // mot de passe attendu
+								has_pass = true;
+								send(client_fd, "Password accepted. Please choose a nickname with NICK <name>\n", 61, 0);
+							} else {
+								send(client_fd, "Wrong password. Try again\n", 24, 0);
+							}
+						} else {
+							send(client_fd, "Please enter password with PASS <password>\n", 44, 0);
+						}
+						continue; // on ne passe pas à la suite
+					}
+
+					if (!has_nick) {
+						if (message.rfind("NICK ", 0) == 0) {
+							nickname = message.substr(5);
+							has_nick = true;
+							send(client_fd, "Nickname accepted. Please enter username with USER <name>\n", 59, 0);
+						} else {
+							send(client_fd, "Please choose a nickname with NICK <nickname>\n", 46, 0);
+						}
+						continue;
+					}
+					client[i].client_nickname = nickname;
+
+					if (!has_user) {
+						if (message.rfind("USER ", 0) == 0) {
+							username = message.substr(5);
+							has_user = true;
+							send(client_fd, "Welcome to the IRC server!\n", 28, 0);
+						} else {
+							send(client_fd, "Please set your username with USER <username>\n", 46, 0);
+						}
+						continue;
+					}
+					client[i].client_username = username;
+
+					std::cout << "Client number " << i + 1 << " are connected" <<std::endl;
+					std::cout << "Nickname: " << client[i].client_nickname << std::endl;
+					std::cout << "Username: " << client[i].client_username << std::endl;
+					
+					/*
+					std::string message(buffer);
+					message = message.substr(0, message.find("\r")); // coupe à \r si telnet
+
+					
 					//enter password
 					//enter nickname
 					//enter user
 					//write(client_fd, "Enter nickname : ", 17);
 					//substr la commande
 					//attendre la bonne commande 
-					client[i]._nickname = "caca";
+					// client[i]._nickname = "";
 					//le client doit ecrire son nickname des qu il se connect sinon erreur
 					//premiere commande = nickname
 					std::cout << "user number " << client_fd << " sent " << buffer << std::endl; 
-					//faire les commandes partie ALEX
+					//faire les commandes
+					*/
 				}
 			}
 		}
 	}
 	perror("");
+}
+
+int	Server::check_password(int client_fd, std::string buffer)
+{
+	std::string try_pass = buffer.substr(0, strlen(buffer.c_str()) - 1);
+	write(client_fd, "Enter password : ", 17);
+	std::cout << "'" << try_pass << "'" << " : " << "'" << _password << "'" << std::endl;
+	if(try_pass == _password)
+		return 0;
+	else
+		return 1;
 }

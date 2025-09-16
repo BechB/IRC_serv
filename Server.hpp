@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bech <bech@student.42.fr>                  +#+  +:+       +#+        */
+/*   By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/08/03 15:41:04 by bech             ###   ########.fr       */
+/*   Updated: 2025/08/10 15:01:03 by bbousaad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,8 @@
 #include <cstring>
 #include "Client.hpp"
 
+class Client;
+
 class Server
 {
 	private:
@@ -44,12 +46,19 @@ class Server
 		std::string _password;
 		int _port;
 		int sockfd;
+		int fd;
+		bool has_pass;
+		bool has_nick;
+		bool has_user;
+		std::string nickname;
+		std::string username;
 
 	public:
 		Server(int argc, char **argv);
 		~Server();
-		int Routine();
-		int    handle_password(char *password);
-		int    handle_port(char *port);
+		int 	Routine();
+		int    	handle_password(char *password);
+		int    	handle_port(char *port);
+		int		check_password(int client_fd, std::string buffer);
 	
 };

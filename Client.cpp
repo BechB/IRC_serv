@@ -1,18 +1,23 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Client.cpp                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/08/10 15:01:31 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/08/10 15:03:08 by aldalmas         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "Client.hpp"
 
-void Client::joinChannel(std::string& channelName)
+Client::Client(std::string usr, std::string nick) : _username(usr), _nickname(nick) {}
+
+std::string Client::getUsername() const
 {
-    return;
+    return _username;
+}
+
+std::string Client::getNickname() const
+{
+    return _nickname;
+}
+
+std::vector<Channel> Client::getChannels() const
+{
+    return _channels;
+}
+
+void Client::joinChannel(std::string channelName)
+{
+    for (size_t i = 0; i < )
 }
