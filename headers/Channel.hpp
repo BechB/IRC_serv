@@ -1,18 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Channel.cpp                                        :+:      :+:    :+:   */
+/*   Channel.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/17 15:58:03 by aldalmas         ###   ########.fr       */
+/*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
+/*   Updated: 2025/09/17 16:02:58 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "headers/Channel.hpp"
+#pragma once
 
 
-std::string Channel::getName() const {return _name;}
+#include "Client.hpp"
 
-std::vector<Client> Channel::getClients() const {return _clients;}
+
+class Client;
+
+class Channel
+{
+    private:
+        std::string         _name;
+        std::vector<Client> _clients;
+
+    public:
+        std::string         getName() const;
+        std::vector<Client> getClients() const;
+
+};

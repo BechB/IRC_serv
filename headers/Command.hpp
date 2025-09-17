@@ -1,18 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Channel.cpp                                        :+:      :+:    :+:   */
+/*   Command.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/17 15:58:03 by aldalmas         ###   ########.fr       */
+/*   Created: 2025/07/15 15:21:07 by bbousaad          #+#    #+#             */
+/*   Updated: 2025/07/15 16:04:41 by bbousaad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "headers/Channel.hpp"
+#pragma once
 
+#include <string>
+#include <cstdlib>
+#include <cctype>
+#include <iostream>
+#include <poll.h>
+#include <limits>
+#include <cerrno>
 
-std::string Channel::getName() const {return _name;}
-
-std::vector<Client> Channel::getClients() const {return _clients;}
+int    handle_port(char *port);

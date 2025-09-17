@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: bbousaad <bbousaad@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/08/10 16:22:39 by bbousaad         ###   ########.fr       */
+/*   Updated: 2025/09/17 16:02:11 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
+#include "headers/Server.hpp"
+
 
 Server::Server(int argc, char **argv)
 {
@@ -62,10 +63,8 @@ Server::Server(int argc, char **argv)
 
 Server::~Server() 
 {
-    for(int i = 0; i < (int)clients.size(); i++)
-    {
-        close(clients[i]);
-    }
+    for(size_t i = 0; i < _clients.size(); ++i)
+		_clients[i].closeFd();
 }
 
 int    Server::handle_port(char *port)
@@ -184,10 +183,12 @@ int Server::Routine()
 			FD_SET(client_fd, &all_fds);
 			if (client_fd > max_fd)
 				max_fd = client_fd;  //new max_fd
-			clients.push_back(client_fd);
+				
+			Client newClient(client_fd);
+			_clients.push_back(newClient);
 		}
 		//vrifier les sockets des clients
-		for (size_t i = 0; i < clients.size(); ++i)
+		for (size_t i = 0; i < _clients.size(); ++i)
 		{
 			/*
 			fd_set est une structure fixe et limitée par FD_SETSIZE (souvent 1024).
@@ -202,7 +203,7 @@ int Server::Routine()
 			Si FD_ISSET(client_fd, &read_fds) → recv()
 			Si recv() == 0 (déconnexion) → close(client_fd) + retirer du clients.
 			*/
-			int client_fd = clients[i];
+			int client_fd = _clients[i].getFd();
 			if (FD_ISSET(client_fd, &read_fds)) 
 			{
 				//le client a envoye des donnees
@@ -216,7 +217,7 @@ int Server::Routine()
 					std::cout << "Someoene are disconnected" << std::endl;
 					close(client_fd);
 					FD_CLR(client_fd, &all_fds);
-					clients.erase(clients.begin() + i);
+					_clients.erase(_clients.begin() + i); // probleme
 					i--;
 				}
 				else
@@ -253,7 +254,7 @@ int Server::Routine()
 						}
 						continue;
 					}
-					client[i].client_nickname = nickname;
+					_clients[i].setNickname(nickname);
 
 					if (!has_user) {
 						if (message.rfind("USER ", 0) == 0) {
@@ -265,11 +266,11 @@ int Server::Routine()
 						}
 						continue;
 					}
-					client[i].client_username = username;
+					_clients[i].setUsername(username);
 
 					std::cout << "Client number " << i + 1 << " are connected" <<std::endl;
-					std::cout << "Nickname: " << client[i].client_nickname << std::endl;
-					std::cout << "Username: " << client[i].client_username << std::endl;
+					std::cout << "Nickname: " << _clients[i].getNickname() << std::endl;
+					std::cout << "Username: " << _clients[i].getUsername() << std::endl;
 					
 					/*
 					std::string message(buffer);
@@ -304,4 +305,16 @@ int	Server::check_password(int client_fd, std::string buffer)
 		return 0;
 	else
 		return 1;
+}
+
+// alex ajout
+std::vector<Client> Server::getClients() const
+{
+	return _clients;
+}
+
+// alex ajout
+std::vector<Channel> Server::getChannels() const
+{
+	return _channels;
 }
