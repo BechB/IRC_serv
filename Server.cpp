@@ -6,7 +6,7 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/17 16:02:11 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/09/18 15:21:27 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -217,7 +217,7 @@ int Server::Routine()
 					std::cout << "Someoene are disconnected" << std::endl;
 					close(client_fd);
 					FD_CLR(client_fd, &all_fds);
-					_clients.erase(_clients.begin() + i); // probleme
+					_clients.erase(_clients.begin() + i);
 					i--;
 				}
 				else
@@ -226,51 +226,61 @@ int Server::Routine()
 					message = message.substr(0, message.find("\r"));
 					std::cout << "user number " << client_fd << " sent " << message << std::endl;
 
-					if (!has_pass) {
+					if (!_clients[i].getHasPass())
+					{
 						if (message.rfind("PASS ", 0) == 0)
 						{ // commence par "PASS "
 							std::string pass = message.substr(5, _password.size());
 							// std::cout << "PASSWORD CLIENT : " << pass << std::endl;
 							// std::cout << "PASSWORD SERVER : " << _password << std::endl;
 							if (pass == _password) { // mot de passe attendu
-								has_pass = true;
+								_clients[i].setHasPass(); // ALEX
 								send(client_fd, "Password accepted. Please choose a nickname with NICK <name>\n", 61, 0);
-							} else {
-								send(client_fd, "Wrong password. Try again\n", 24, 0);
 							}
-						} else {
-							send(client_fd, "Please enter password with PASS <password>\n", 44, 0);
+							else
+								send(client_fd, "Wrong password. Try again\n", 24, 0);
 						}
+						else
+							send(client_fd, "Please enter password with PASS <password>\n", 44, 0);
 						continue; // on ne passe pas à la suite
 					}
 
-					if (!has_nick) {
-						if (message.rfind("NICK ", 0) == 0) {
+					if (!_clients[i].getHasNick())
+					{
+						if (message.rfind("NICK ", 0) == 0)
+						{
 							nickname = message.substr(5);
-							has_nick = true;
+							_clients[i].setHasNick();
 							send(client_fd, "Nickname accepted. Please enter username with USER <name>\n", 59, 0);
-						} else {
+						} 
+						else
 							send(client_fd, "Please choose a nickname with NICK <nickname>\n", 46, 0);
-						}
 						continue;
 					}
 					_clients[i].setNickname(nickname);
 
-					if (!has_user) {
-						if (message.rfind("USER ", 0) == 0) {
+					if (!_clients[i].getHasUser())
+					{
+						if (message.rfind("USER ", 0) == 0)
+						{
 							username = message.substr(5);
-							has_user = true;
+							// has_user = true; // BECH
+							_clients[i].setHasUser();
 							send(client_fd, "Welcome to the IRC server!\n", 28, 0);
-						} else {
-							send(client_fd, "Please set your username with USER <username>\n", 46, 0);
 						}
+						else
+							send(client_fd, "Please set your username with USER <username>\n", 46, 0);
 						continue;
 					}
 					_clients[i].setUsername(username);
-
-					std::cout << "Client number " << i + 1 << " are connected" <<std::endl;
-					std::cout << "Nickname: " << _clients[i].getNickname() << std::endl;
-					std::cout << "Username: " << _clients[i].getUsername() << std::endl;
+					if (_clients[i].isRegistred())
+					{
+						std::cout << "Client number " << i + 1 << " are connected" <<std::endl;
+						std::cout << "Nickname: " << _clients[i].getNickname() << std::endl;
+						std::cout << "Username: " << _clients[i].getUsername() << std::endl;	
+					}
+					else
+						std::cout << "Not registred. Try again." << std::endl;
 					
 					/*
 					std::string message(buffer);

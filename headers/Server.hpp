@@ -6,7 +6,7 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/17 16:02:30 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/09/18 15:14:57 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,9 +52,6 @@ class Server
 		int _port;
 		int sockfd;
 		int fd;
-		bool has_pass;
-		bool has_nick;
-		bool has_user;
 
 	public:
 		Server(int argc, char **argv);
