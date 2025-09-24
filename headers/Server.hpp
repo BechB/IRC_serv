@@ -6,62 +6,58 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/18 15:14:57 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/09/23 17:48:03 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+#include <map>
 #include <string>
-#include <cstdlib>
-#include <cctype>
-#include <iostream>
-#include <poll.h>
-#include <string>
-#include <cstdlib>
-#include <cctype>
-#include <iostream>
-#include <poll.h>
-#include <limits>
-#include <cerrno>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>   // pour close()
-#include <stdio.h>
-#include <vector>
-#include <cstring>
-#include "Client.hpp"
+#include <utility> // std::pair
 
+
+class Client;
+class Channel;
 
 class Server
 {
 	private:
-	
-		// Client  client[50];
-		// std::vector<int> clients; // à supprimer
+		int 								_port;
+		int 								_sockfd;
+
+		std::pair<std::string, std::string> _cmd;
+		std::map<int, Client> 				_clients;
+		std::map<std::string, Channel>		_channels;
+		std::string 						_password;
 		
-		std::vector<Channel> _channels; // alex ajout
-		std::vector<Client> _clients; // alex ajout
+		std::string 						_passGranted;
+		std::string 						_passDenied;
+		std::string 						_passCmdInfo;
 		
-		std::string username;
-		std::string nickname;
-		std::string _password;
-		int _port;
-		int sockfd;
-		int fd;
+		std::string 						_nickGranted;
+		std::string 						_nickCmdInfo;
+		
+		std::string 						_userGranted;
+		std::string 						_userCmdInfo;
 
 	public:
 		Server(int argc, char **argv);
 		~Server();
 
-		std::vector<Client> getClients() const; // alex ajout
-		std::vector<Channel> getChannels() const; // alex ajout
+		
+		std::map<int, Client> 			getClients() const;
+		std::map<std::string, Channel>	getChannels() const;
 		
 		int 	Routine();
 		int    	handle_password(char *password);
 		int    	handle_port(char *port);
 		int		check_password(int client_fd, std::string buffer);
+		void	initSystemMsgs();
+		
+		// COMMANDS
+		bool 	checkAuthenticate(Client& currentClient);
+		bool 	isCommandUsed(Client& currentClient);
+		void 	extractCmd(const std::string& message);
+		void	addClientToChannel(Client& currentClient);
 };

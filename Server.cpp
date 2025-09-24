@@ -6,11 +6,27 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/18 15:21:27 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/09/23 18:00:35 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "headers/Server.hpp"
+#include "headers/Client.hpp"
+#include "headers/Channel.hpp"
+
+#include <poll.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <cerrno>
+#include <limits>
+#include <cstring>
+#include <cstdio>
+#include <iostream>
+#include <cstdlib>
 
 
 Server::Server(int argc, char **argv)
@@ -42,8 +58,8 @@ Server::Server(int argc, char **argv)
 	addr.sin_port = htons(_port);
 	addr.sin_family = AF_INET; //pour que mon socket soit defeini en tant que IPV4
 	inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd == -1)
+	_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (_sockfd == -1)
 	{
         std::cerr << "Error: socket creation failed" << std::endl;
 		exit(1);
@@ -51,20 +67,21 @@ Server::Server(int argc, char **argv)
 	else
     std::cout << "OK" << std::endl;
     int value;
-    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int)); //parametre le serveur pour que l ip soit utilisable sans delai
-	fcntl(sockfd, F_SETFL, O_NONBLOCK); //rend le socket non bloquant pour plusieurs client,
+    setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int)); //parametre le serveur pour que l ip soit utilisable sans delai
+	fcntl(_sockfd, F_SETFL, O_NONBLOCK); //rend le socket non bloquant pour plusieurs client,
 	perror("");
-	bind(sockfd, ((struct sockaddr *)&addr), sizeof(addr));
+	bind(_sockfd, ((struct sockaddr *)&addr), sizeof(addr));
 	perror("");
-	listen(sockfd, 15); //limiter le nombre de client qui peuvent se connecter (ici : 15)
+	listen(_sockfd, 15); //limiter le nombre de client qui peuvent se connecter (ici : 15)
 						//permet d ecouter
-    
+    initSystemMsgs();
 }
 
 Server::~Server() 
 {
-    for(size_t i = 0; i < _clients.size(); ++i)
-		_clients[i].closeFd();
+	std::map<int, Client>::iterator it = _clients.begin();
+	for (; it != _clients.end(); ++it)
+		it->second.closeFd();
 }
 
 int    Server::handle_port(char *port)
@@ -77,7 +94,8 @@ int    Server::handle_port(char *port)
 		std::cout << "ERROR: check port format (int limits)" << std::endl;
 		return 1;
 	}
-	if (*endptr != '\0') {
+	if (*endptr != '\0')
+	{
 		std::cout << "ERROR: check port format" << std::endl;
 		return 1;
 	}
@@ -158,12 +176,12 @@ int Server::Routine()
 {
     fd_set all_fds;
     FD_ZERO(&all_fds);        // Vide le set
-    FD_SET(sockfd, &all_fds); // Ajoute le socket serveur
-	int max_fd = sockfd;
+    FD_SET(_sockfd, &all_fds); // Ajoute le socket serveur
+	int max_fd = _sockfd;
 	char buffer[4096];
 
 	//fd_set read_fds = all_fds; // Copie de l'ensemble principal
-	while(5)
+	while(1)
 	{
 		fd_set read_fds = all_fds;
 		int ready = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
@@ -173,23 +191,29 @@ int Server::Routine()
 			std::cerr << "Error: request not accepted" << std::endl;
 			return 1;
 		}
+
 		//vrifier si le socket serveur est prêt
-		if (FD_ISSET(sockfd, &read_fds))
+		if (FD_ISSET(_sockfd, &read_fds))
 		{
 			//nouveau client en attente
-			int client_fd = accept(sockfd, NULL, NULL);
-			
+			int client_fd = accept(_sockfd, NULL, NULL);
+			std::cout << "client_fd: " << client_fd << std::endl;
 			//ajouter le client au set et au container
 			FD_SET(client_fd, &all_fds);
 			if (client_fd > max_fd)
-				max_fd = client_fd;  //new max_fd
-				
-			Client newClient(client_fd);
-			_clients.push_back(newClient);
+				max_fd = client_fd;
+
+			Client newUser(client_fd);
+			_clients.insert(std::make_pair(client_fd, newUser));
+
 		}
 		//vrifier les sockets des clients
-		for (size_t i = 0; i < _clients.size(); ++i)
+		std::map<int, Client>::iterator it = _clients.begin();
+		for (; it != _clients.end(); )
 		{
+			int client_fd = it->first;
+    		Client& currentClient = it->second;
+
 			/*
 			fd_set est une structure fixe et limitée par FD_SETSIZE (souvent 1024).
 			Quand un client se déconnecte, tu dois facilement retirer son descripteur de la liste.
@@ -203,7 +227,6 @@ int Server::Routine()
 			Si FD_ISSET(client_fd, &read_fds) → recv()
 			Si recv() == 0 (déconnexion) → close(client_fd) + retirer du clients.
 			*/
-			int client_fd = _clients[i].getFd();
 			if (FD_ISSET(client_fd, &read_fds)) 
 			{
 				//le client a envoye des donnees
@@ -214,74 +237,40 @@ int Server::Routine()
                 
 				if (signal <= 0)
 				{
-					std::cout << "Someoene are disconnected" << std::endl;
-					close(client_fd);
+					if (signal < 0)
+						std::cout << "Signal error with "<< currentClient.getNickname() << std::endl;
+					else
+						std::cout << currentClient.getNickname() << " are disconnected" << std::endl;
+					
+					currentClient.closeFd();
 					FD_CLR(client_fd, &all_fds);
-					_clients.erase(_clients.begin() + i);
-					i--;
+					_clients.erase(it++);
+					continue;
 				}
 				else
 				{
 					std::string message(buffer);
-					message = message.substr(0, message.find("\r"));
-					std::cout << "user number " << client_fd << " sent " << message << std::endl;
 
-					if (!_clients[i].getHasPass())
+					send(client_fd, "debug: ", 7, 0);
+					send(client_fd, message.c_str(), message.size(), 0);
+					// check USER, NICK et PASS
+					std::cout << "[" << message.find("\n") << "]" << std::endl;
+					for (size_t i = 0; i < message.size(); ++i)
 					{
-						if (message.rfind("PASS ", 0) == 0)
-						{ // commence par "PASS "
-							std::string pass = message.substr(5, _password.size());
-							// std::cout << "PASSWORD CLIENT : " << pass << std::endl;
-							// std::cout << "PASSWORD SERVER : " << _password << std::endl;
-							if (pass == _password) { // mot de passe attendu
-								_clients[i].setHasPass(); // ALEX
-								send(client_fd, "Password accepted. Please choose a nickname with NICK <name>\n", 61, 0);
-							}
-							else
-								send(client_fd, "Wrong password. Try again\n", 24, 0);
-						}
-						else
-							send(client_fd, "Please enter password with PASS <password>\n", 44, 0);
-						continue; // on ne passe pas à la suite
+        				if (message[i] == '\r')
+							message[i] = '\n';
 					}
-
-					if (!_clients[i].getHasNick())
-					{
-						if (message.rfind("NICK ", 0) == 0)
-						{
-							nickname = message.substr(5);
-							_clients[i].setHasNick();
-							send(client_fd, "Nickname accepted. Please enter username with USER <name>\n", 59, 0);
-						} 
-						else
-							send(client_fd, "Please choose a nickname with NICK <nickname>\n", 46, 0);
-						continue;
-					}
-					_clients[i].setNickname(nickname);
-
-					if (!_clients[i].getHasUser())
-					{
-						if (message.rfind("USER ", 0) == 0)
-						{
-							username = message.substr(5);
-							// has_user = true; // BECH
-							_clients[i].setHasUser();
-							send(client_fd, "Welcome to the IRC server!\n", 28, 0);
-						}
-						else
-							send(client_fd, "Please set your username with USER <username>\n", 46, 0);
-						continue;
-					}
-					_clients[i].setUsername(username);
-					if (_clients[i].isRegistred())
-					{
-						std::cout << "Client number " << i + 1 << " are connected" <<std::endl;
-						std::cout << "Nickname: " << _clients[i].getNickname() << std::endl;
-						std::cout << "Username: " << _clients[i].getUsername() << std::endl;	
-					}
-					else
-						std::cout << "Not registred. Try again." << std::endl;
+					message = message.substr(0, message.find('\n'));
+					extractCmd(message);
 					
+					if (!currentClient.getIsRegistred())
+					{
+						if (checkAuthenticate(currentClient))
+							continue;
+					}
+							
+					if (isCommandUsed(currentClient))
+						continue;
 					/*
 					std::string message(buffer);
 					message = message.substr(0, message.find("\r")); // coupe à \r si telnet
@@ -301,6 +290,7 @@ int Server::Routine()
 					*/
 				}
 			}
+			++it;
 		}
 	}
 	perror("");
@@ -317,14 +307,124 @@ int	Server::check_password(int client_fd, std::string buffer)
 		return 1;
 }
 
-// alex ajout
-std::vector<Client> Server::getClients() const
+std::map<int, Client> Server::getClients() const {return _clients;}
+
+std::map<std::string, Channel> Server::getChannels() const{return _channels;}
+
+void Server::initSystemMsgs()
 {
-	return _clients;
+	_passGranted = "Password accepted. Please choose a nickname with NICK <name>\n";
+	_passDenied = "Wrong password. Try again\n";
+	_passCmdInfo = "Please enter password with PASS <password>\n";
+	
+	_nickGranted = "Nickname accepted. Please enter username with USER <name>\n";
+	_nickCmdInfo = "Please choose a nickname with NICK <nickname>\n";
+	
+	_userGranted = "Welcome to the IRC server!\n";
+	_userCmdInfo = "Please set your username with USER <username>\n";
 }
 
-// alex ajout
-std::vector<Channel> Server::getChannels() const
+
+bool Server::checkAuthenticate(Client& currentClient)
 {
-	return _channels;
+	int fd = currentClient.getFd();
+
+	if (!currentClient.getHasPass())
+	{
+		if (_cmd.first == "PASS")
+		{
+			if (_cmd.second == _password)
+			{
+				currentClient.setHasPass();
+				send(fd, _passGranted.c_str(), _passGranted.size(), 0);
+			}
+			else
+				send(fd, _passDenied.c_str(), _passDenied.size(), 0);
+		}
+		else
+			send(fd, _passCmdInfo.c_str(), _passCmdInfo.size(), 0);
+
+		return false;
+	}
+
+	if (!currentClient.getHasNick())
+	{
+		if (_cmd.first == "NICK")
+		{
+			currentClient.setHasNick();
+			currentClient.setNickname(_cmd.second);
+			send(fd, _nickGranted.c_str(), _nickGranted.size(), 0);
+		} 
+		else
+			send(fd, _nickCmdInfo.c_str(), _nickCmdInfo.size(), 0);
+
+		return false;
+
+	}
+
+	if (!currentClient.getHasUser())
+	{
+		if (_cmd.first == "USER")
+		{
+			currentClient.setHasUser();
+			currentClient.setUsername(_cmd.second);
+			send(fd, _userGranted.c_str(), _userGranted.size(), 0);
+		}
+		else
+			send(fd, _userCmdInfo.c_str(), _userCmdInfo.size(), 0);
+	
+		return false;
+	}
+
+	if (currentClient.getIsRegistred())
+	{
+		std::cout << "Client  " << fd - 3 << " are connected" <<std::endl;
+		std::cout << "Nickname: " << currentClient.getNickname() << std::endl;
+		std::cout << "Username: " << currentClient.getUsername() << std::endl;
+	}
+	else
+		std::cout << "Can not registered. Try again." << std::endl;
+	
+	return true;
 }
+
+bool Server::isCommandUsed(Client& currentClient)
+{
+	if (_cmd.first == "JOIN")
+	{
+		std::cout << "JOIN found!" << std::endl;
+		addClientToChannel(currentClient);
+
+		return true;
+	}
+
+	return false;
+}
+
+void Server::addClientToChannel(Client& currentClient)
+{
+	std::cout << "le channel va être créé !" << std::endl;
+	Channel newChannel(_cmd.second, currentClient.getFd());
+	_channels.insert(std::make_pair(_cmd.second, newChannel));
+	currentClient.joinChannel(_cmd.second);
+	// todo
+}
+
+void Server::extractCmd(const std::string& message)
+{
+	size_t space = message.find(' ');
+	
+	if (space == std::string::npos)
+	{
+		_cmd.first = message;
+		_cmd.second = "";
+	}
+	else
+	{
+		_cmd.first = message.substr(0, space);
+		_cmd.second = message.substr(space + 1);
+		const std::string lastt = _cmd.second;
+	}
+	std::cout << "Commande extraite: [" << _cmd.first << "] avec [" << _cmd.second << "]" << std::endl; 
+}
+

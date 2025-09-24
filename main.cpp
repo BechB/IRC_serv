@@ -6,7 +6,7 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 08:54:50 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/17 15:59:53 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/09/19 17:51:26 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,14 +87,14 @@ int main(int argc, char **argv)
 	*/
 
 	/*
-	sockfd : le socket serveur (celui qui écoute).
+	_sockfd : le socket serveur (celui qui écoute).
 	addr : pointeur vers une structure sockaddr où accept() va stocker l’adresse du client (IP et port).
 	addrlen : taille de la structure addr.
 	*/
 	
 	
 	/*
-	sockfd : le descripteur retourné par socket()
+	_sockfd : le descripteur retourné par socket()
 	addr : une structure sockaddr (souvent castée depuis sockaddr_in)
 	addrlen : la taille de cette structure (sizeof(struct sockaddr_in))
 	*/
@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 	//parser le port, ex de port valide (1024-65535) OK
 	//stocker le mdp pour la connection
 	// appels systeme classiques : socket(AF_INET, SOCK_STREAM, 0)
-	// mettre le socket en mode non bloquant :fcntl(sockfd, F_SETFL, O_NONBLOCK);
+	// mettre le socket en mode non bloquant :fcntl(_sockfd, F_SETFL, O_NONBLOCK);
 	// car on ne dois jamais faire de blocage I/O;
 
 	//etape 2
@@ -141,13 +141,13 @@ int main(int argc, char **argv)
 	prepare une struct sockaddr_in
 	adresse : INADDR_ANY(0.0.0.0) pour ecouter sur toutes les interfaces, on fait pas ca.
 	port: htons(port) (tu dois convertir le port au format reseau)
-	appelle bind(sockfd, ...) pour lier le coket a l adresse
+	appelle bind(_sockfd, ...) pour lier le coket a l adresse
 	*/
    
 	//etape 3 
 	/*
 	demarrer l ecoute avec listen()
-	listen(sockfd, SOMAXCONN);
+	listen(_sockfd, SOMAXCONN);
 	cela prepare le socket a recevoir des connexions entrantes.
 	SOMAXCONN est la taille max de la file d’attente du système pour les connexions en attente
 	*/
@@ -155,8 +155,8 @@ int main(int argc, char **argv)
 	//etape 4
 	/*
 	Avec select()
-	on prepare un fd_set, FD_SET(sockfd, &readfds)
-	garde le sockfd comme max fd a surveiller
+	on prepare un fd_set, FD_SET(_sockfd, &readfds)
+	garde le _sockfd comme max fd a surveiller
 	*/
    
 	//etape 5
