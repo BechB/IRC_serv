@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/23 18:48:42 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/09/27 18:35:30 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,18 @@ Channel::Channel(const std::string &name, int creator_fd)
     _members.insert(creator_fd);
 }
 
+// setters
+void                Channel::setTopic(const std::string& newTopic) {_topic = newTopic;}
+void                Channel::setKey(const std::string& newKey) {_key = newKey;}
+void                Channel::setLimit(int limit) {_memberLimit = std::max(1, std::min(limit, 100));}
+void                Channel::setInvitOnly() {_invitOnly = true;}
+
+// specialized setters
+void                Channel::enableInvitOnly() {_invitOnly = true;}
+void                Channel::removeInvitOnly() {_invitOnly = false;}
+
+
+// getters
 int                 Channel::getMemberLimit() const {return _memberLimit;}
 bool                Channel::getInvitOnly() const {return _invitOnly;}
 std::string         Channel::getKey() const {return _key;}
@@ -33,4 +45,10 @@ std::string         Channel::getName() const {return _name;}
 std::set<int>       Channel::getMembers() const {return _members;}
 std::set<int>       Channel::getOperators() const {return _operators;}
 
-void                Channel::addMember(int client_fd);
+
+// members
+bool                Channel::checkKey(const std::string& key) const {return _key == key;}
+void                Channel::addMember(int client_fd) {_members.insert(client_fd);}
+void                Channel::addOperator(int client_fd) {_operators.insert(client_fd);}
+void                Channel::removeMember(int client_fd) {_members.erase(client_fd);}
+void                Channel::removeOperator(int client_fd) {_operators.erase(client_fd);}

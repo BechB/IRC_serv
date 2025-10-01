@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/23 18:00:35 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/09/29 19:52:43 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,26 @@
 #include <cstdio>
 #include <iostream>
 #include <cstdlib>
+#include <sstream>
 
+
+static bool parseJoinParams(const std::string& params)
+{
+	std::string channelName = params;
+	std::istringstream iss(channelName);
+
+	// iss will stop after reaching the first white space (or end of string), then grab the word before
+	if (!(iss >> channelName) || channelName.empty())
+		return false;
+	
+	// search if another word is found
+	std::string searchExtraWord;
+
+	if (iss >> searchExtraWord)
+		return false;
+
+	return true;
+}
 
 Server::Server(int argc, char **argv)
 {
@@ -54,6 +73,8 @@ Server::Server(int argc, char **argv)
 		_port = handle_port(argv[1]);
 	if(handle_password(argv[2]) == 1)
 		exit(1);
+
+	_name = "ircserv";
     _password = argv[2];
 	addr.sin_port = htons(_port);
 	addr.sin_family = AF_INET; //pour que mon socket soit defeini en tant que IPV4
@@ -84,6 +105,14 @@ Server::~Server()
 		it->second.closeFd();
 }
 
+
+// getters 
+std::string 					Server::getName() const {return _name;}
+std::map<int, Client> 			Server::getClients() const {return _clients;}
+std::map<std::string, Channel>	Server::getChannels() const{return _channels;}
+
+
+// members
 int    Server::handle_port(char *port)
 {
 	char *endptr;
@@ -120,6 +149,7 @@ int    Server::handle_port(char *port)
 	}
 	return val;
 }
+
 
 int Server::handle_password(char *password)
 {
@@ -171,6 +201,7 @@ int Server::handle_password(char *password)
 	}
 	return 0;
 }
+
 
 int Server::Routine()
 {
@@ -251,8 +282,8 @@ int Server::Routine()
 				{
 					std::string message(buffer);
 
-					send(client_fd, "debug: ", 7, 0);
-					send(client_fd, message.c_str(), message.size(), 0);
+					// send(client_fd, "debug: ", 7, 0);
+					// send(client_fd, message.c_str(), message.size(), 0);
 					// check USER, NICK et PASS
 					std::cout << "[" << message.find("\n") << "]" << std::endl;
 					for (size_t i = 0; i < message.size(); ++i)
@@ -296,6 +327,7 @@ int Server::Routine()
 	perror("");
 }
 
+
 int	Server::check_password(int client_fd, std::string buffer)
 {
 	std::string try_pass = buffer.substr(0, strlen(buffer.c_str()) - 1);
@@ -307,9 +339,6 @@ int	Server::check_password(int client_fd, std::string buffer)
 		return 1;
 }
 
-std::map<int, Client> Server::getClients() const {return _clients;}
-
-std::map<std::string, Channel> Server::getChannels() const{return _channels;}
 
 void Server::initSystemMsgs()
 {
@@ -388,26 +417,104 @@ bool Server::checkAuthenticate(Client& currentClient)
 	return true;
 }
 
+
 bool Server::isCommandUsed(Client& currentClient)
 {
 	if (_cmd.first == "JOIN")
 	{
-		std::cout << "JOIN found!" << std::endl;
 		addClientToChannel(currentClient);
-
 		return true;
 	}
+	// todo 
 
 	return false;
 }
 
+
 void Server::addClientToChannel(Client& currentClient)
 {
-	std::cout << "le channel va être créé !" << std::endl;
-	Channel newChannel(_cmd.second, currentClient.getFd());
-	_channels.insert(std::make_pair(_cmd.second, newChannel));
-	currentClient.joinChannel(_cmd.second);
-	// todo
+	std::string channelName = _cmd.second;
+	std::map<std::string, Channel>::iterator channel_it = _channels.find(channelName);
+
+	// channel part
+    if (channel_it == _channels.end())
+		createChannel(channelName, currentClient); // client will be added in the channel's ctor (in _members & _operators)
+	else
+	{
+		if (!checkChannelPermissions(currentClient, channel_it->second))
+			return;
+		
+		channel_it->second.addMember(currentClient.getFd());
+	}
+
+	currentClient.joinChannel(channelName);
+	
+	channel_it = _channels.find(channelName);
+	const std::set<int>& members = channel_it->second.getMembers();
+	std::set<int>::iterator member_it = members.begin();
+
+	if (member_it == members.end())
+	{
+		std::cout << "member_it failed" << std::endl;
+		return;
+	}
+	
+	for (; member_it != members.end(); ++member_it)
+	{
+		int fd = *member_it;
+		std::cout << "fd présents dans le channel: " << fd << std::endl;
+		memberEnterChannel(currentClient, fd, channel_it->second);
+	}
+
+	if (channel_it->second.getTopic().empty())
+		RPL_NOTOPIC(currentClient, channel_it->second);
+	else
+		RPL_TOPIC(currentClient, channel_it->second);
+
+    // sendRplNamReply(currentClient, channelName, it->second.membersAsNickList());
+    // sendRplEndOfNames(currentClient, channelName);
+	
+	// member part
+}
+
+
+bool Server::checkChannelPermissions(const Client& client, const Channel& channel) const
+{
+	int limit = channel.getMemberLimit();
+	std::set<int> members = channel.getMembers();
+	
+	if (limit > 0 && (((int)members.size() + 1) > limit))
+	{
+		sendError(client, 471,  " #" + channel.getName() + " :Cannot join channel (+l).");
+		return false;
+	}
+
+	if (!channel.getKey().empty())
+	{
+		std::istringstream iss(_cmd.second);
+		std::string name, key, extra;
+
+		iss >> name; // consume the name for search the key and extra
+		if (!(iss >> key) || !channel.checkKey(key) || iss >> extra)
+		{
+			sendError(client, 475, " #" + channel.getName() + " :Cannot join channel (+k)");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void Server::createChannel(const std::string& channelName, const Client& currentClient)
+{
+	if (!parseJoinParams(_cmd.second))
+	{
+		sendError(currentClient, 456, " JOIN :Not enough parameters");
+		return;
+	}
+	Channel newChannel(channelName, currentClient.getFd());
+	_channels.insert(std::make_pair(channelName, newChannel));
+	std::cout << "channel " << newChannel.getName() << " a été créé." << std::endl;
 }
 
 void Server::extractCmd(const std::string& message)
@@ -425,6 +532,42 @@ void Server::extractCmd(const std::string& message)
 		_cmd.second = message.substr(space + 1);
 		const std::string lastt = _cmd.second;
 	}
-	std::cout << "Commande extraite: [" << _cmd.first << "] avec [" << _cmd.second << "]" << std::endl; 
 }
 
+void Server::sendError(const Client& client, int errCode, const std::string& errmsg) const
+{
+	std::ostringstream oss;
+
+	oss << ":" << _name << " " << errCode << " " << client.getNickname() << errmsg << "\r\n";
+	const std::string reply = oss.str();
+	send(client.getFd(), reply.c_str(), reply.size(), 0);
+}
+
+void Server::memberEnterChannel(const Client& client, int otherMemberFd, const Channel& channel) const
+{
+	std::ostringstream oss;
+	
+	oss << ":" << client.getNickname() << "!" << client.getUsername() << "@" << _name << " JOIN :#" << channel.getName() << "\r\n";
+	const std::string reply = oss.str();
+	if (send(otherMemberFd, reply.c_str(), reply.size(), 0) == -1)
+		std::cout << "send == -1" << std::endl;
+}
+
+void Server::RPL_TOPIC(const Client& client, const Channel& channel) const
+{
+	std::ostringstream oss;
+	
+	oss << ":" << _name << " 332 " << client.getNickname() << " #" << channel.getName() << " :" << channel.getTopic() << "\r\n";
+	const std::string reply = oss.str();
+	send(client.getFd(), reply.c_str(), reply.size(), 0);
+}
+
+void Server::RPL_NOTOPIC(const Client& client, const Channel& channel) const
+{
+	std::ostringstream oss;
+
+	oss << ":" << _name << " 331 " << client.getNickname() << " #" << channel.getName() << " :No topic is set\r\n";
+	const std::string reply = oss.str();
+	send(client.getFd(), reply.c_str(), reply.size(), 0);
+	
+}

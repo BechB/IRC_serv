@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/09/23 18:48:23 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/09/27 18:35:36 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,17 @@ class Channel
     public:
         Channel(const std::string &name, int creator_fd);
 
+        // setters
+        void            setTopic(const std::string& newTopic);
+        void            setKey(const std::string& newKey);
+        void            setLimit(int limit);
+        void            setInvitOnly();
+        
+        // specialized setters
+        void            enableInvitOnly();
+        void            removeInvitOnly();
+
+        // getters
         int             getMemberLimit() const;
         bool            getInvitOnly() const;
         std::string     getKey() const;
@@ -38,5 +49,10 @@ class Channel
         std::set<int>   getMembers() const;
         std::set<int>   getOperators() const;
 
+        // members
+        bool            checkKey(const std::string& key) const;
         void            addMember(int client_fd);
+        void            addOperator(int client_fd);
+        void            removeMember(int client_fd);
+        void            removeOperator(int client_fd);
 };
