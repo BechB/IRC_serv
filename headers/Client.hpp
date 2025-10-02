@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:21:28 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/27 18:18:32 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/02 14:04:02 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ class Client
         bool                        _hasPass;
         bool                        _hasNick;
         bool                        _hasUser;
-        bool                        _isRegistred;
+        // bool                        _isRegistred;
         std::string                 _username;
         std::string                 _nickname;
         std::set<std::string>       _channels;

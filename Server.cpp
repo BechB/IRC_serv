@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/29 19:52:43 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/02 15:46:58 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -265,7 +265,7 @@ int Server::Routine()
                 memset(buffer, '\0', 4096);
 
                 int signal = recv(client_fd, buffer, sizeof(buffer), 0);
-                
+                std::cout << "[" << buffer << "]" << std::endl;
 				if (signal <= 0)
 				{
 					if (signal < 0)
@@ -349,7 +349,7 @@ void Server::initSystemMsgs()
 	_nickGranted = "Nickname accepted. Please enter username with USER <name>\n";
 	_nickCmdInfo = "Please choose a nickname with NICK <nickname>\n";
 	
-	_userGranted = "Welcome to the IRC server!\n";
+	_userGranted = "Username accepted.\n";
 	_userCmdInfo = "Please set your username with USER <username>\n";
 }
 
@@ -380,6 +380,9 @@ bool Server::checkAuthenticate(Client& currentClient)
 	{
 		if (_cmd.first == "NICK")
 		{
+			// verif si le NICK est unique parmi les clients
+			// if (meme nick qu'un autre)
+			//	return false;
 			currentClient.setHasNick();
 			currentClient.setNickname(_cmd.second);
 			send(fd, _nickGranted.c_str(), _nickGranted.size(), 0);
@@ -395,26 +398,31 @@ bool Server::checkAuthenticate(Client& currentClient)
 	{
 		if (_cmd.first == "USER")
 		{
+			// verif si le USER est unique parmi les clients
 			currentClient.setHasUser();
 			currentClient.setUsername(_cmd.second);
 			send(fd, _userGranted.c_str(), _userGranted.size(), 0);
 		}
 		else
 			send(fd, _userCmdInfo.c_str(), _userCmdInfo.size(), 0);
-	
+
+		if (currentClient.getIsRegistred())
+		{
+			std::string welcomeMsg = ":" + _name + " 001 " + currentClient.getNickname() + " : welcome ," + currentClient.getNickname() + "\r\n";
+			send(fd, welcomeMsg.c_str(), welcomeMsg.size(), 0);
+			std::cout << "Client  " << fd - 3 << " are connected" <<std::endl;
+			std::cout << "Nickname: " << currentClient.getNickname() << std::endl;
+			std::cout << "Username: " << currentClient.getUsername() << std::endl;
+			
+			return true;
+		}
+		else
+			std::cout << "Can not registered. Try again." << std::endl;
+		
 		return false;
 	}
 
-	if (currentClient.getIsRegistred())
-	{
-		std::cout << "Client  " << fd - 3 << " are connected" <<std::endl;
-		std::cout << "Nickname: " << currentClient.getNickname() << std::endl;
-		std::cout << "Username: " << currentClient.getUsername() << std::endl;
-	}
-	else
-		std::cout << "Can not registered. Try again." << std::endl;
-	
-	return true;
+	return false;
 }
 
 
@@ -473,7 +481,7 @@ void Server::addClientToChannel(Client& currentClient)
 
     // sendRplNamReply(currentClient, channelName, it->second.membersAsNickList());
     // sendRplEndOfNames(currentClient, channelName);
-	
+
 	// member part
 }
 
@@ -546,8 +554,8 @@ void Server::sendError(const Client& client, int errCode, const std::string& err
 void Server::memberEnterChannel(const Client& client, int otherMemberFd, const Channel& channel) const
 {
 	std::ostringstream oss;
-	
-	oss << ":" << client.getNickname() << "!" << client.getUsername() << "@" << _name << " JOIN :#" << channel.getName() << "\r\n";
+	oss << ":" << client.getNickname() << " JOIN #" << channel.getName() << "\r\n";
+	// oss << ":" << client.getNickname() << "!" << client.getUsername() << "@" << _name << " JOIN #" << channel.getName() << "\r\n";
 	const std::string reply = oss.str();
 	if (send(otherMemberFd, reply.c_str(), reply.size(), 0) == -1)
 		std::cout << "send == -1" << std::endl;
@@ -557,7 +565,7 @@ void Server::RPL_TOPIC(const Client& client, const Channel& channel) const
 {
 	std::ostringstream oss;
 	
-	oss << ":" << _name << " 332 " << client.getNickname() << " #" << channel.getName() << " :" << channel.getTopic() << "\r\n";
+	oss << ":" << _name << " 332 " << client.getNickname() << " #" << channel.getName() << " " << channel.getTopic() << "\r\n";
 	const std::string reply = oss.str();
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
@@ -566,7 +574,7 @@ void Server::RPL_NOTOPIC(const Client& client, const Channel& channel) const
 {
 	std::ostringstream oss;
 
-	oss << ":" << _name << " 331 " << client.getNickname() << " #" << channel.getName() << " :No topic is set\r\n";
+	oss << ":" << _name << " 331 " << client.getNickname() << " #" << channel.getName() << " No topic is set\r\n";
 	const std::string reply = oss.str();
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 	
