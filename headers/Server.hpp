@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/03 16:15:19 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/03 17:54:25 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@
 #define PASS_GRANTED "Password accepted. Please choose a nickname with NICK <name>"
 #define NICK_GRANTED "Nickname accepted. Please enter username with USER <name>"
 
+#define ERR_NONICKNAMEGIVEN " :No nickname given" // 431
 #define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" // 471
 #define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" // 475
 #define ERR_NOSUCHCHANNEL "JOIN :No such channel" // 403
@@ -95,7 +96,7 @@ class Server
 
 		
 		// COMMANDS
-		bool 	checkAuthenticate(Client& currentClient);
+		void 	checkAuthenticate(Client& currentClient);
 		bool 	isCommandUsed(Client& currentClient);
 		void 	extractCmd(const std::string& message);
 		void	addClientToChannel(Client& currentClient);
@@ -110,6 +111,7 @@ class Server
 		void	sendSystemMsg(const Client& client, const std::string& code, const std::string& errmsg) const;
 		void	RPL_TOPIC(const Client& cli, const Channel& channel) const;
 		void	RPL_NOTOPIC(const Client& client, const Channel& channel) const;
+		void	RPL_NAMREPLY();
 };
 
 
