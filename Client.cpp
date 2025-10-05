@@ -3,16 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/23 16:34:55 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/02 15:14:47 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/05 18:16:26 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "headers/Client.hpp"
-#include <unistd.h> // close
-#include <iostream>
+
 
 
 Client::Client(int fd)
@@ -21,6 +20,7 @@ Client::Client(int fd)
     _hasPass = false;
     _hasNick = false;
     _hasUser = false;
+    _registred = false;
 }
 
 
@@ -28,22 +28,29 @@ Client::Client(int fd)
 void    Client::setHasPass() {_hasPass = true;}
 void    Client::setHasUser() {_hasUser = true;}
 void    Client::setHasNick() {_hasNick = true;}
-void    Client::setNickname(const std::string& nickname) {_nickname = nickname;}
 void    Client::setUsername(const std::string& username) {_username = username;}
+void    Client::setNickname(const std::string& nickname)
+{
+    _oldNickname = _nickname;
+    _nickname = nickname;
+}
 
+void    Client::setRegistred() {_registred = true;}
 
 // getters
 int                         Client::getFd() const {return _fd;}
 bool                        Client::getHasPass() const {return _hasPass;}
 bool                        Client::getHasNick() const {return _hasNick;}
 bool                        Client::getHasUser() const {return _hasUser;}
-bool                        Client::getIsRegistred() const {return _hasPass && _hasNick && _hasUser;}
+bool                        Client::getIsRegistred() const {return _registred;}
 std::string                 Client::getUsername() const {return _username;}
 std::string                 Client::getNickname() const {return _nickname;}
 std::set<std::string>       Client::getChannels() const {return _channels;}
+std::string                 Client::getOldNickname() const {return _oldNickname;}
 
 
 // members
 void    Client::closeFd() {close(_fd);}
 void    Client::joinChannel(const std::string& name) {_channels.insert(name);}
 void    Client::leaveChannel(const std::string& name) {_channels.erase(name);}
+

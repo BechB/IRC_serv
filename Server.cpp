@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/03 18:10:26 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/05 18:15:22 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -276,10 +276,10 @@ int Server::Routine()
 					message = message.substr(0, message.find('\n'));
 					extractCmd(message);
 					
-					if (!currentClient.getIsRegistred())
-						checkAuthenticate(currentClient);
-					else
-						isCommandUsed(currentClient);
+					// if (!currentClient.getIsRegistred())
+					// 	checkAuthenticate(currentClient);
+					// else
+					checkCommand(currentClient);
 					/*
 					std::string message(buffer);
 					message = message.substr(0, message.find("\r")); // coupe à \r si telnet
@@ -332,103 +332,214 @@ void Server::initSystemMsgs()
 }
 
 
-void Server::checkAuthenticate(Client& currentClient)
-{
-	int fd = currentClient.getFd();
+// void Server::checkAuthenticate(Client& currentClient)
+// {
+// 	int fd = currentClient.getFd();
+// 	std::string& command = _cmd.first;
+// 	std::string& parameter = _cmd.second;
 
-	if (!currentClient.getHasPass())
-	{
-		if (_cmd.first == "PASS")
-		{
-			if (_cmd.second == _password)
-			{
-				currentClient.setHasPass();
-				sendSystemMsg(fd, "", PASS_GRANTED);
-				// send(fd, _passGranted.c_str(), _passGranted.size(), 0);
-			}
-			else
-				sendSystemMsg(fd, "461", ERR_NEEDMOREPARAMS_PASS);
-		}
-		else
-			send(fd, _passCmdInfo.c_str(), _passCmdInfo.size(), 0);
+	// if (!currentClient.getHasPass())
+	// {
+	// 	if (command == "PASS")
+	// 	{
+	// 		if (parameter == _password)
+	// 		{
+	// 			currentClient.setHasPass();
+	// 			sendSystemMsg(fd, "", PASS_GRANTED);
+	// 			// send(fd, _passGranted.c_str(), _passGranted.size(), 0);
+	// 		}
+	// 		else
+	// 			sendSystemMsg(fd, "461", ERR_NEEDMOREPARAMS_PASS);
+	// 	}
+	// 	else
+	// 		sendSystemMsg(fd, "", CMD_INFO_PASS);
 
-		return;
-	}
+	// 	return;
+	// }
 
-	if (!currentClient.getHasNick())
-	{
-		if (_cmd.first == "NICK")
-		{
-			if (_cmd.second == "")
-			{
-				sendSystemMsg(fd, "431", ERR_NONICKNAMEGIVEN);
-				return;
-			}
-			if (isNickExist(_cmd.second))
-			{
-				sendSystemMsg(fd, "436", _cmd.second + ERR_NICKCOLLISION);
-				return;
-			}
-			currentClient.setHasNick();
-			currentClient.setNickname(_cmd.second);
-			sendSystemMsg(fd, "", NICK_GRANTED);
-			// send(fd, _nickGranted.c_str(), _nickGranted.size(), 0);
-		} 
-		else
-			sendSystemMsg(fd, "", CMD_INFO_NICK);
-			// send(fd, _nickCmdInfo.c_str(), _nickCmdInfo.size(), 0);
-
-		return;
-	}
-
-	if (!currentClient.getHasUser())
-	{
-		if (_cmd.first == "USER" && _cmd.second != "")
-		{
-			// verif si le USER est unique parmi les clients
-			currentClient.setHasUser();
-			currentClient.setUsername(_cmd.second);
-			// send(fd, _userGranted.c_str(), _userGranted.size(), 0);
-		}
-		else
-			sendSystemMsg(fd, "", CMD_INFO_USER);
-			// send(fd, _userCmdInfo.c_str(), _userCmdInfo.size(), 0);
-
-		if (currentClient.getIsRegistred())
-		{
-			std::string welcomeMsg = currentClient.getNickname() + " :Welcome to IRC server, " + currentClient.getNickname() + "!";
-			sendSystemMsg(fd, "001", welcomeMsg);
+	// if (!currentClient.getHasNick())
+	// {
+	// 	if (command == "NICK")
+	// 	{
+	// 		if (parameter == "")
+	// 		{
+	// 			sendSystemMsg(fd, "431", ERR_NONICKNAMEGIVEN);
+	// 			return;
+	// 		}
 			
-			return;
-		}
-		else
-			std::cout << "Can not registered. Try again." << std::endl;
+	// 		if (isValidName(parameter))
+	// 		{
+	// 			if (isNickExist(parameter))
+	// 			{
+	// 				sendSystemMsg(fd, "433", parameter + ERR_NICKNAMEINUSE);
+	// 				return;
+	// 			}
+	// 			currentClient.setHasNick();
+	// 			currentClient.setNickname(parameter);
+	// 			sendSystemMsg(fd, "", NICK_GRANTED);
+	// 		}
+	// 	} 
+	// 	else
+	// 		sendSystemMsg(fd, "", CMD_INFO_NICK);
+
+	// 	return;
+	// }
+
+	// if (!currentClient.getHasUser())
+	// {
+	// 	if (command == "USER" && parameter != "")
+	// 	{
+	// 		if (isValidName(parameter))
+	// 		{
+	// 			currentClient.setHasUser();
+	// 			currentClient.setUsername(parameter);
+	// 		}
+	// 	}
+	// 	else
+	// 		sendSystemMsg(fd, "461", ERR_NEEDMOREPARAMS_USER);
+
+	// 	if (currentClient.getIsRegistred())
+	// 	{
+	// 		std::string welcomeMsg = currentClient.getNickname() + " :Welcome to IRC server, " + currentClient.getNickname() + "!";
+	// 		sendSystemMsg(fd, "001", welcomeMsg);
+			
+	// 		return;
+	// 	}
+	// 	else
+	// 		sendSystemMsg(currentClient, "451", ERR_NOTREGISTERED);
 		
+	// 	return;
+	// }
+
+// 	return;
+// }
+
+void Server::handlePASS(Client& client, const std::string& pass)
+{
+	if (client.getIsRegistred())
+	{
+		sendSystemMsg(client, "462", ERR_ALREADYREGISTRED);
 		return;
 	}
 
-	return;
+	if (pass.empty())
+	{
+		sendSystemMsg(client, "461",  "* PASS " ERR_NEEDMOREPARAMS);
+		return;
+	}
+
+	if (pass != _password)
+	{
+		sendSystemMsg(client, "464", ERR_PASSWDMISMATCH);
+		return;
+	}
+
+	client.setHasPass();
 }
 
-
-bool Server::isCommandUsed(Client& currentClient)
+// reach all the channels of the client, and will notify each client in these same channels the nick change 
+void Server::broadcastNickChange(const Client& client)
 {
-	std::cout << "debug cmd: " << _cmd.first << std::endl;
-	if (_cmd.first == "JOIN")
-	{
-		addClientToChannel(currentClient);
-		return true;
-	}
-	// verif si LES CMD USER ET NICK SNT RAPPELEES (REFAIRE LE NICK SI C'EST LE CAS, USER DECLENCHE UNE ERREUR)
-	// todo 
+	const std::set<std::string>& channels = client.getChannels();
+	std::set<std::string>::iterator channel_it = channels.begin();
+	
+	std::string reply = ":" + client.getOldNickname() + " NICK :" + client.getNickname() + "\r\n";
 
-	return false;
+	for (; channel_it != channels.end(); ++channel_it)
+	{
+		std::map<std::string, Channel>::iterator search_it = _channels.find(*channel_it);
+		if (search_it == _channels.end())
+			continue;
+
+		const std::set<int>& members = search_it->second.getMembers();
+		for (std::set<int>::iterator member_it = members.begin(); member_it != members.end(); ++member_it)
+			send(*member_it, reply.c_str(), reply.size(), 0);
+	}
+}
+
+void Server::handleNICK(Client& client, const std::string& name)
+{
+	std::cout << "handleNICK: NICK trouvé" << std::endl;
+	if (name.empty())
+	{
+		sendSystemMsg(client, "431", ERR_NONICKNAMEGIVEN);
+		return;
+	}
+
+	if (!isValidName(name))
+	{
+		sendSystemMsg(client, "432", ERR_ERRONEUSNICKNAME);
+		return;
+	}
+
+	if (isNickExist(name))
+	{
+		sendSystemMsg(client, "433", ERR_NICKNAMEINUSE);
+		return;
+	}
+	
+	std::cout << "NICK setted" << std::endl;
+	client.setHasNick();
+	client.setNickname(name);
+
+	if (client.getIsRegistred())
+	{
+		
+	}
+}
+
+void Server::handleUSER(Client& client, const std::string& name)
+{
+	if (name.empty())
+	{
+		sendSystemMsg(client, "461", "* USER " ERR_NEEDMOREPARAMS);
+		return;
+	}
+
+	if (client.getIsRegistred())
+	{
+		sendSystemMsg(client, "462", ERR_ALREADYREGISTRED);
+		return;
+	}
+
+	std::cout << "USER setted" << std::endl;
+
+	client.setHasUser();
+	client.setUsername(name);
+}
+
+void Server::checkCommand(Client& client)
+{
+	const bool wasReg = client.getIsRegistred();
+	const std::string command = _cmd.first;
+	const std::string parameter = _cmd.second;
+	
+	std::cout << "command: " << command << std::endl;
+	std::cout << "parameter: " << parameter << std::endl;
+
+	if (command == "PASS") handlePASS(client, parameter);
+	else if (command == "USER") handleUSER(client, parameter);
+	else if (command == "NICK") handleNICK(client, parameter);
+	
+	if (!wasReg && (client.getHasPass() && client.getHasNick() && client.getHasUser()))
+	{
+		client.setRegistred();
+		std::string welcomeMsg = client.getNickname() + " :Welcome to IRC server, " + client.getNickname() + "!";
+		sendSystemMsg(client, "001", welcomeMsg);
+	}
+	if (!client.getIsRegistred())
+	{
+		sendSystemMsg(client, "451", ERR_NOTREGISTERED);
+		return;
+	}
+	if (command == "JOIN") handleJOIN(client, parameter);
+	// autres else if...
 }
 
 bool Server::isNickExist(const std::string& nickname)
 {
-	
 	std::map<int, Client>::iterator it = _clients.begin();
+
 	for (; it != _clients.end(); ++it)
 	{
 		if (it->second.getNickname() == nickname)
@@ -438,25 +549,20 @@ bool Server::isNickExist(const std::string& nickname)
 	return false;
 }
 
-bool Server::isUserExist(const std::string& username)
+
+void Server::handleJOIN(Client& client, const std::string& param)
 {
-	
-	std::map<int, Client>::iterator it = _clients.begin();
-	for (; it != _clients.end(); ++it)
+	if (!client.getIsRegistred())
 	{
-		if (it->second.getUsername() == username)
-			return true;
+		sendSystemMsg(client, "451", ERR_NOTREGISTERED);
+		return;
 	}
 
-	return false;
-}
-
-void Server::addClientToChannel(Client& currentClient)
-{
-	std::string channelName = _cmd.second;
+	std::string channelName = param;
+	
 	if (channelName.find_first_of('#', 0) == std::string::npos)
 	{
-		sendSystemMsg(currentClient, "403", ERR_NOSUCHCHANNEL);
+		sendSystemMsg(client, "403", ERR_NOSUCHCHANNEL);
 		return;
 	}
 
@@ -464,16 +570,16 @@ void Server::addClientToChannel(Client& currentClient)
 
 	// channel part
     if (channel_it == _channels.end())
-		createChannel(channelName, currentClient); // client will be added in the channel's ctor (in _members & _operators)
+		createChannel(channelName, client); // client will be added in the channel's ctor (in _members & _operators)
 	else
 	{
-		if (!checkChannelPermissions(currentClient, channel_it->second))
+		if (!checkChannelPermissions(client, channel_it->second))
 			return;
 
-		channel_it->second.addMember(currentClient.getFd());
+		channel_it->second.addMember(client.getFd());
 	}
 
-	currentClient.joinChannel(channelName);
+	client.joinChannel(channelName);
 	
 	channel_it = _channels.find(channelName);
 	const std::set<int>& members = channel_it->second.getMembers();
@@ -489,18 +595,17 @@ void Server::addClientToChannel(Client& currentClient)
 	{
 		int fd = *member_it;
 		std::cout << "fd présents dans le channel: " << fd << std::endl;
-		memberEnterChannel(currentClient, fd, channel_it->second);
+		memberEnterChannel(client, fd, channel_it->second);
 	}
 
 	if (channel_it->second.getTopic().empty())
-		RPL_NOTOPIC(currentClient, channel_it->second);
+		RPL_NOTOPIC(client, channel_it->second);
 	else
-		RPL_TOPIC(currentClient, channel_it->second);
+		RPL_TOPIC(client, channel_it->second);
 
     // sendRplNamReply(currentClient, channelName, it->second.membersAsNickList());
     // sendRplEndOfNames(currentClient, channelName);
 
-	// member part
 }
 
 
@@ -535,12 +640,11 @@ void Server::createChannel(const std::string& channelName, const Client& current
 {
 	if (!parseJoinParams(_cmd.second))
 	{
-		sendSystemMsg(currentClient, "461", ERR_NEEDMOREPARAMS_CHAN);
+		sendSystemMsg(currentClient, "461", channelName + ERR_NEEDMOREPARAMS);
 		return;
 	}
 	Channel newChannel(channelName, currentClient.getFd());
 	_channels.insert(std::make_pair(channelName, newChannel));
-	// std::cout << "channel " << newChannel.getName() << " a été créé." << std::endl;
 }
 
 void Server::extractCmd(const std::string& message)
@@ -562,7 +666,7 @@ void Server::extractCmd(const std::string& message)
 
 void Server::sendSystemMsg(const Client& client, const std::string& code, const std::string& errmsg) const
 {
-	std::string reply = ":" + _name + " " + code + " " + client.getNickname() + errmsg + "\r\n";
+	std::string reply = ":" + _name + " " + code + " " + client.getNickname() + " " + errmsg + "\r\n";
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
 
@@ -589,14 +693,21 @@ void Server::RPL_NOTOPIC(const Client& client, const Channel& channel) const
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
 
-// void Server::ERR_NOSUCHCHANNEL(const Client& client, const Channel& channel) const
-// {
-// 	std::string reply = ":" + _name + " 403 " + channel.getName() + " :No such channel\r\n";
-// 	send(client.getFd(), reply.c_str(), reply.size(), 0);
-// }
+bool    Server::isValidName(const std::string& name) const
+{
+    const int maxSize = 10;
+    const std::string authorizedChars =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789";
 
-// void 	Server::ERR_NEEDMOREPARAMS(const Client& client, const Channel& channel) const
-// {
-// 	std::string reply = ":" + _name + " 461 " + channel.getName() + " :Not enought parameters\r\n";
-// 	send(client.getFd(), reply.c_str(), reply.size(), 0);
-// }
+    if (name.empty() || name.size() > maxSize)
+        return false;
+
+    for (size_t i = 0; i < name.size(); ++i)
+    {
+        if (authorizedChars.find(name[i]) == std::string::npos)
+            return false;
+    }
+    return true;
+}

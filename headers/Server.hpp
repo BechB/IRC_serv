@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/03 17:54:25 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/05 18:15:20 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,17 +39,16 @@
 #define PASS_GRANTED "Password accepted. Please choose a nickname with NICK <name>"
 #define NICK_GRANTED "Nickname accepted. Please enter username with USER <name>"
 
-#define ERR_NONICKNAMEGIVEN " :No nickname given" // 431
+#define ERR_NONICKNAMEGIVEN ":No nickname given" // 431
 #define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" // 471
 #define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" // 475
 #define ERR_NOSUCHCHANNEL "JOIN :No such channel" // 403
-#define ERR_NEEDMOREPARAMS_PASS "PASS :Not enough parameters" // 461
-#define ERR_NEEDMOREPARAMS_USER "USER :Not enough parameters" // 461
-#define ERR_NEEDMOREPARAMS_NICK "NICK :Not enough parameters" // 461
-#define ERR_NEEDMOREPARAMS_CHAN "NICK :Not enough parameters" // 461
-#define ERR_ALREADYREGISTRED " :You may not reregister" // 462
-#define ERR_NICKCOLLISION " :Nickname collision KILL" //436
-
+#define ERR_NEEDMOREPARAMS ":Not enough parameters" // 461
+#define ERR_ALREADYREGISTRED ":You may not reregister" // 462
+#define ERR_NICKNAMEINUSE ":Nickname is already in use" //433
+#define ERR_ERRONEUSNICKNAME ":Erroneus nickname" // 432
+#define ERR_NOTREGISTERED ":You have not registered" // 451
+#define ERR_PASSWDMISMATCH ":Password incorrect" // 464
 
 
 class Client;
@@ -91,20 +90,25 @@ class Server
 		int    	handle_port(char *port);
 		int		check_password(int client_fd, std::string buffer);
 		void	initSystemMsgs();
-		bool 	isUserExist(const std::string& username);
 		bool	isNickExist(const std::string& nickname);
 
 		
 		// COMMANDS
-		void 	checkAuthenticate(Client& currentClient);
-		bool 	isCommandUsed(Client& currentClient);
+		// void 	checkAuthenticate(Client& currentClient);
+		void 	checkCommand(Client& client);
 		void 	extractCmd(const std::string& message);
-		void	addClientToChannel(Client& currentClient);
+		void	handlePASS(Client& client, const std::string& pass);
+		void	handleNICK(Client& client, const std::string& name);
+		void	handleUSER(Client& client, const std::string& name);
+		void	handleJOIN(Client& client, const std::string& param);
+		
+		// client
+		bool    isValidName(const std::string& name) const;
+		void	broadcastNickChange(const Client& client);
 
 		// channels
 		void	createChannel(const std::string& channelName, const Client& currentClient);
 		bool	checkChannelPermissions(const Client& client, const Channel& channel) const;
-		void	JOINmessage(const Client& client, const Channel& channel) const;
 		void	memberEnterChannel(const Client& client, int otherMemberFd, const Channel& channel) const;
 
 		// system msg
@@ -113,5 +117,3 @@ class Server
 		void	RPL_NOTOPIC(const Client& client, const Channel& channel) const;
 		void	RPL_NAMREPLY();
 };
-
-
