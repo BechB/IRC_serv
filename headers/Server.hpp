@@ -6,7 +6,7 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/05 18:15:20 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/06 18:05:07 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,7 @@
 #define ERR_ERRONEUSNICKNAME ":Erroneus nickname" // 432
 #define ERR_NOTREGISTERED ":You have not registered" // 451
 #define ERR_PASSWDMISMATCH ":Password incorrect" // 464
+#define ERR_UNKNOWNCOMMAND " :Unknown command" // 421
 
 
 class Client;
@@ -115,5 +116,6 @@ class Server
 		void	sendSystemMsg(const Client& client, const std::string& code, const std::string& errmsg) const;
 		void	RPL_TOPIC(const Client& cli, const Channel& channel) const;
 		void	RPL_NOTOPIC(const Client& client, const Channel& channel) const;
-		void	RPL_NAMREPLY();
+		void	RPL_NAMREPLY(const Client& client, const Channel& channel) const;
+		void	RPL_ENDOFNAMES(const Client& client, const Channel& channel) const;
 };

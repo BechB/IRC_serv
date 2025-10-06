@@ -6,7 +6,7 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/05 18:15:22 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/06 18:04:06 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -227,7 +227,7 @@ int Server::Routine()
 		for (; it != _clients.end(); )
 		{
 			int client_fd = it->first;
-    		Client& currentClient = it->second;
+    		Client& client = it->second;
 
 			/*
 			fd_set est une structure fixe et limitée par FD_SETSIZE (souvent 1024).
@@ -254,11 +254,11 @@ int Server::Routine()
 				if (signal <= 0)
 				{
 					if (signal < 0)
-						std::cout << "Signal error with "<< currentClient.getNickname() << std::endl;
+						std::cout << "Signal error with "<< client.getNickname() << std::endl;
 					else
-						std::cout << currentClient.getNickname() << " are disconnected" << std::endl;
+						std::cout << client.getNickname() << " are disconnected" << std::endl;
 					
-					currentClient.closeFd();
+					client.closeFd();
 					FD_CLR(client_fd, &all_fds);
 					_clients.erase(it++);
 					continue;
@@ -266,20 +266,32 @@ int Server::Routine()
 				else
 				{
 					std::string message(buffer);
-
+					
 					std::cout << "[" << message.find("\n") << "]" << std::endl;
 					for (size_t i = 0; i < message.size(); ++i)
 					{
-        				if (message[i] == '\r')
-							message[i] = '\n';
+						if (message[i] == '\r')
+						message[i] = '\n';
 					}
 					message = message.substr(0, message.find('\n'));
 					extractCmd(message);
 					
-					// if (!currentClient.getIsRegistred())
-					// 	checkAuthenticate(currentClient);
-					// else
-					checkCommand(currentClient);
+					const bool wasRegister = client.getIsRegistred();
+					checkCommand(client);
+					const bool isNowRegister = client.getHasPass() && client.getHasNick() && client.getHasUser();
+					if (!wasRegister && isNowRegister)
+					{
+						client.setRegistred();
+						std::string welcomeMsg = client.getNickname() + " :Welcome to IRC server, " + client.getNickname() + "!";
+						sendSystemMsg(client, "001", welcomeMsg);
+					}
+					if (!wasRegister && !isNowRegister)
+					{
+						const std::string& command = _cmd.first;
+						
+						if (command != "PASS" && command != "USER" && command != "NICK")
+							sendSystemMsg(client, "451", ERR_NOTREGISTERED);
+					}
 					/*
 					std::string message(buffer);
 					message = message.substr(0, message.find("\r")); // coupe à \r si telnet
@@ -332,88 +344,6 @@ void Server::initSystemMsgs()
 }
 
 
-// void Server::checkAuthenticate(Client& currentClient)
-// {
-// 	int fd = currentClient.getFd();
-// 	std::string& command = _cmd.first;
-// 	std::string& parameter = _cmd.second;
-
-	// if (!currentClient.getHasPass())
-	// {
-	// 	if (command == "PASS")
-	// 	{
-	// 		if (parameter == _password)
-	// 		{
-	// 			currentClient.setHasPass();
-	// 			sendSystemMsg(fd, "", PASS_GRANTED);
-	// 			// send(fd, _passGranted.c_str(), _passGranted.size(), 0);
-	// 		}
-	// 		else
-	// 			sendSystemMsg(fd, "461", ERR_NEEDMOREPARAMS_PASS);
-	// 	}
-	// 	else
-	// 		sendSystemMsg(fd, "", CMD_INFO_PASS);
-
-	// 	return;
-	// }
-
-	// if (!currentClient.getHasNick())
-	// {
-	// 	if (command == "NICK")
-	// 	{
-	// 		if (parameter == "")
-	// 		{
-	// 			sendSystemMsg(fd, "431", ERR_NONICKNAMEGIVEN);
-	// 			return;
-	// 		}
-			
-	// 		if (isValidName(parameter))
-	// 		{
-	// 			if (isNickExist(parameter))
-	// 			{
-	// 				sendSystemMsg(fd, "433", parameter + ERR_NICKNAMEINUSE);
-	// 				return;
-	// 			}
-	// 			currentClient.setHasNick();
-	// 			currentClient.setNickname(parameter);
-	// 			sendSystemMsg(fd, "", NICK_GRANTED);
-	// 		}
-	// 	} 
-	// 	else
-	// 		sendSystemMsg(fd, "", CMD_INFO_NICK);
-
-	// 	return;
-	// }
-
-	// if (!currentClient.getHasUser())
-	// {
-	// 	if (command == "USER" && parameter != "")
-	// 	{
-	// 		if (isValidName(parameter))
-	// 		{
-	// 			currentClient.setHasUser();
-	// 			currentClient.setUsername(parameter);
-	// 		}
-	// 	}
-	// 	else
-	// 		sendSystemMsg(fd, "461", ERR_NEEDMOREPARAMS_USER);
-
-	// 	if (currentClient.getIsRegistred())
-	// 	{
-	// 		std::string welcomeMsg = currentClient.getNickname() + " :Welcome to IRC server, " + currentClient.getNickname() + "!";
-	// 		sendSystemMsg(fd, "001", welcomeMsg);
-			
-	// 		return;
-	// 	}
-	// 	else
-	// 		sendSystemMsg(currentClient, "451", ERR_NOTREGISTERED);
-		
-	// 	return;
-	// }
-
-// 	return;
-// }
-
 void Server::handlePASS(Client& client, const std::string& pass)
 {
 	if (client.getIsRegistred())
@@ -435,6 +365,7 @@ void Server::handlePASS(Client& client, const std::string& pass)
 	}
 
 	client.setHasPass();
+	return;
 }
 
 // reach all the channels of the client, and will notify each client in these same channels the nick change 
@@ -483,9 +414,7 @@ void Server::handleNICK(Client& client, const std::string& name)
 	client.setNickname(name);
 
 	if (client.getIsRegistred())
-	{
-		
-	}
+		broadcastNickChange(client);
 }
 
 void Server::handleUSER(Client& client, const std::string& name)
@@ -502,38 +431,45 @@ void Server::handleUSER(Client& client, const std::string& name)
 		return;
 	}
 
-	std::cout << "USER setted" << std::endl;
-
 	client.setHasUser();
 	client.setUsername(name);
 }
 
 void Server::checkCommand(Client& client)
 {
-	const bool wasReg = client.getIsRegistred();
 	const std::string command = _cmd.first;
 	const std::string parameter = _cmd.second;
 	
 	std::cout << "command: " << command << std::endl;
 	std::cout << "parameter: " << parameter << std::endl;
 
-	if (command == "PASS") handlePASS(client, parameter);
-	else if (command == "USER") handleUSER(client, parameter);
-	else if (command == "NICK") handleNICK(client, parameter);
-	
-	if (!wasReg && (client.getHasPass() && client.getHasNick() && client.getHasUser()))
+	if (command == "PASS")
 	{
-		client.setRegistred();
-		std::string welcomeMsg = client.getNickname() + " :Welcome to IRC server, " + client.getNickname() + "!";
-		sendSystemMsg(client, "001", welcomeMsg);
-	}
-	if (!client.getIsRegistred())
-	{
-		sendSystemMsg(client, "451", ERR_NOTREGISTERED);
+		handlePASS(client, parameter);
 		return;
 	}
-	if (command == "JOIN") handleJOIN(client, parameter);
-	// autres else if...
+	
+	if (command == "USER")
+	{
+		handleUSER(client, parameter);
+		return;
+	}
+	
+	if (command == "NICK")
+	{
+		handleNICK(client, parameter);
+		return;
+	}
+
+	if (command == "JOIN")
+	{
+		handleJOIN(client, parameter);
+		return;
+	}
+
+	// autres if command..
+	
+	sendSystemMsg(client, "421", command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
 }
 
 bool Server::isNickExist(const std::string& nickname)
@@ -594,7 +530,6 @@ void Server::handleJOIN(Client& client, const std::string& param)
 	for (; member_it != members.end(); ++member_it)
 	{
 		int fd = *member_it;
-		std::cout << "fd présents dans le channel: " << fd << std::endl;
 		memberEnterChannel(client, fd, channel_it->second);
 	}
 
@@ -603,9 +538,8 @@ void Server::handleJOIN(Client& client, const std::string& param)
 	else
 		RPL_TOPIC(client, channel_it->second);
 
-    // sendRplNamReply(currentClient, channelName, it->second.membersAsNickList());
-    // sendRplEndOfNames(currentClient, channelName);
-
+	RPL_NAMREPLY(client, channel_it->second); // channel's members list
+    RPL_ENDOFNAMES(client, channel_it->second); // notify the end of the list
 }
 
 
@@ -693,7 +627,7 @@ void Server::RPL_NOTOPIC(const Client& client, const Channel& channel) const
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
 
-bool    Server::isValidName(const std::string& name) const
+bool Server::isValidName(const std::string& name) const
 {
     const int maxSize = 10;
     const std::string authorizedChars =
@@ -710,4 +644,36 @@ bool    Server::isValidName(const std::string& name) const
             return false;
     }
     return true;
+}
+
+void Server::RPL_NAMREPLY(const Client& client, const Channel& channel) const
+{
+	// '=' is 'public channel'
+	std::string reply = ":" + _name + " 353 " + client.getNickname() + " = " + channel.getName() + " :";
+
+	const std::set<int>& clients = channel.getMembers();
+	const std::set<int>& operators = channel.getOperators();
+	std::set<int>::iterator it_client = clients.begin();
+
+	for (; it_client != clients.end(); ++it_client)
+	{
+		std::string isOpe = "";
+		std::map<int, Client>::const_iterator it_map = _clients.find(*it_client); // find client in _clients map of Server
+	
+		if (it_map != _clients.end())
+		{	
+			if (operators.find(it_map->first) != operators.end())
+				isOpe = "@";
+
+			reply += isOpe + it_map->second.getNickname() + " ";
+		}
+	}
+	reply += "\r\n";
+	send(client.getFd(), reply.c_str(), reply.size(), 0);
+}
+
+void Server::RPL_ENDOFNAMES(const Client& client, const Channel& channel) const
+{
+    std::string reply = ":" + _name + " 366 " + client.getNickname() + " " + channel.getName() + " :End of /NAMES list\r\n";
+    send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
