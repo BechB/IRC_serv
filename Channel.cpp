@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/09/27 18:35:30 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/06 22:04:34 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ Channel::Channel(const std::string &name, int creator_fd)
 {
     _memberLimit = -1;
     _invitOnly = false;
+    _topicRestricted = true;
     _key = "";
     _topic = "";
     _name = name;
@@ -39,11 +40,14 @@ void                Channel::removeInvitOnly() {_invitOnly = false;}
 // getters
 int                 Channel::getMemberLimit() const {return _memberLimit;}
 bool                Channel::getInvitOnly() const {return _invitOnly;}
+bool                Channel::getTopicRestriction() const {return _topicRestricted;}
+
 std::string         Channel::getKey() const {return _key;}
 std::string         Channel::getTopic() const {return _topic;}
 std::string         Channel::getName() const {return _name;}
 std::set<int>       Channel::getMembers() const {return _members;}
 std::set<int>       Channel::getOperators() const {return _operators;}
+
 
 
 // members

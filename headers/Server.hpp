@@ -6,7 +6,7 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/06 18:05:07 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/06 21:56:32 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,18 +39,24 @@
 #define PASS_GRANTED "Password accepted. Please choose a nickname with NICK <name>"
 #define NICK_GRANTED "Nickname accepted. Please enter username with USER <name>"
 
-#define ERR_NONICKNAMEGIVEN ":No nickname given" // 431
-#define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" // 471
-#define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" // 475
-#define ERR_NOSUCHCHANNEL "JOIN :No such channel" // 403
+// miscelaneous
 #define ERR_NEEDMOREPARAMS ":Not enough parameters" // 461
-#define ERR_ALREADYREGISTRED ":You may not reregister" // 462
-#define ERR_NICKNAMEINUSE ":Nickname is already in use" //433
-#define ERR_ERRONEUSNICKNAME ":Erroneus nickname" // 432
-#define ERR_NOTREGISTERED ":You have not registered" // 451
-#define ERR_PASSWDMISMATCH ":Password incorrect" // 464
 #define ERR_UNKNOWNCOMMAND " :Unknown command" // 421
 
+// profile / authenticate
+#define ERR_NONICKNAMEGIVEN ":No nickname given" // 431
+#define ERR_ERRONEUSNICKNAME ":Erroneus nickname" // 432
+#define ERR_NICKNAMEINUSE ":Nickname is already in use" //433
+#define ERR_NOTREGISTERED ":You have not registered" // 451
+#define ERR_ALREADYREGISTRED ":You may not reregister" // 462
+#define ERR_PASSWDMISMATCH ":Password incorrect" // 464
+
+// channel
+#define ERR_NOSUCHCHANNEL "JOIN :No such channel" // 403
+#define ERR_NOTONCHANNEL ":You're not on that channel" // 442
+#define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" // 471
+#define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" // 475
+#define ERR_CHANOPRIVSNEEDED ":You're not channel operator" // 482 
 
 class Client;
 class Channel;
@@ -102,6 +108,7 @@ class Server
 		void	handleNICK(Client& client, const std::string& name);
 		void	handleUSER(Client& client, const std::string& name);
 		void	handleJOIN(Client& client, const std::string& param);
+		void	handleTOPIC(const Client& client, const std::string& param);
 		
 		// client
 		bool    isValidName(const std::string& name) const;

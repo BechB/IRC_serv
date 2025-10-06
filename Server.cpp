@@ -6,13 +6,23 @@
 /*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/06 18:04:06 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/06 22:06:08 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "headers/Server.hpp"
 
-
+// static std::vector<std::string> isolateParameters(const std::string& param)
+// {
+// 	std::vector<std::string> params;
+// 	std::istringstream iss(param);
+// 	std::string word;
+	
+// 	while(iss >> word)
+// 		params.push_back(word);
+	
+// 	return params; 
+// }
 
 static bool parseJoinParams(const std::string& params)
 {
@@ -292,23 +302,9 @@ int Server::Routine()
 						if (command != "PASS" && command != "USER" && command != "NICK")
 							sendSystemMsg(client, "451", ERR_NOTREGISTERED);
 					}
-					/*
-					std::string message(buffer);
-					message = message.substr(0, message.find("\r")); // coupe à \r si telnet
-
 					
-					//enter password
-					//enter nickname
-					//enter user
-					//write(client_fd, "Enter nickname : ", 17);
-					//substr la commande
-					//attendre la bonne commande 
-					// client[i]._nickname = "";
-					//le client doit ecrire son nickname des qu il se connect sinon erreur
-					//premiere commande = nickname
-					std::cout << "user number " << client_fd << " sent " << buffer << std::endl; 
-					//faire les commandes
-					*/
+					// std::string message(buffer);
+					// message = message.substr(0, message.find("\r")); // coupe à \r si telnet
 				}
 			}
 			++it;
@@ -365,7 +361,6 @@ void Server::handlePASS(Client& client, const std::string& pass)
 	}
 
 	client.setHasPass();
-	return;
 }
 
 // reach all the channels of the client, and will notify each client in these same channels the nick change 
@@ -437,8 +432,16 @@ void Server::handleUSER(Client& client, const std::string& name)
 
 void Server::checkCommand(Client& client)
 {
-	const std::string command = _cmd.first;
-	const std::string parameter = _cmd.second;
+	std::string command = _cmd.first;
+	std::string parameter = _cmd.second;
+	// std::vector<std::string> params;
+
+	// std::istringstream iss(parameter);
+	// std::vector<std::string> params;
+	// std::string word;
+	
+	// while(iss >> word)
+	// 	params.push_back(word);
 	
 	std::cout << "command: " << command << std::endl;
 	std::cout << "parameter: " << parameter << std::endl;
@@ -467,10 +470,68 @@ void Server::checkCommand(Client& client)
 		return;
 	}
 
+	if (command == "TOPIC")
+	{
+		handleTOPIC(client, parameter);
+		return;
+	}
+
 	// autres if command..
 	
 	sendSystemMsg(client, "421", command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
 }
+
+void Server::handleTOPIC(const Client& client, const std::string& param)
+{
+	std::istringstream iss(param);
+	std::string channelName;
+
+	iss >> channelName; // consume first param
+
+	if (channelName.empty() || channelName[0] != '#')
+	{
+		sendSystemMsg(client, "403", ERR_NOSUCHCHANNEL);
+		return;
+	}
+
+	std::map<std::string, Channel>::iterator it_channel = _channels.find(channelName);
+	if (it_channel == _channels.end())
+	{
+		sendSystemMsg(client, "442", channelName + ERR_NOTONCHANNEL);
+		return;
+	}
+	
+	Channel& channel = it_channel->second;
+	if (channel.getTopicRestriction())
+	{
+		const std::set<int>& operators = channel.getOperators();
+		std::set<int>::iterator it_ope = operators.find(client.getFd());
+		if(it_ope == operators.end())
+		{
+			sendSystemMsg(client, "482", channel.getName() + " " + ERR_CHANOPRIVSNEEDED);
+			return;
+		}
+	}
+	std::string newTopic;
+	std::getline(iss, newTopic); // get all the word until the end of params, start by #chanName and save in newTopic
+	
+	//  if only spaces
+	size_t start = newTopic.find_first_not_of(' ');
+	size_t end = newTopic.find_last_not_of(' ');
+	if (start == std::string::npos)
+	{
+		if (channel.getTopic().empty())
+			RPL_NOTOPIC(client, channel);
+		else
+			RPL_TOPIC(client, channel);
+		
+		return;
+	}
+	newTopic = newTopic.substr(start, end - start + 1);
+	channel.setTopic(newTopic);
+	RPL_TOPIC(client, channel);
+}
+
 
 bool Server::isNickExist(const std::string& nickname)
 {

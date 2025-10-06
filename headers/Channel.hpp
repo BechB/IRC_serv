@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/09/27 18:35:36 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/06 18:49:39 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,9 +19,10 @@
 class Channel
 {
     private:
-        int             _memberLimit;
-        bool            _invitOnly;
-        std::string     _key;
+        int             _memberLimit;               // +l
+        bool            _invitOnly;                 // +i
+        bool            _topicRestricted;           // +t
+        std::string     _key;                       // +k
         std::string     _topic;
         std::string     _name;
         std::set<int>   _operators;
@@ -48,6 +49,7 @@ class Channel
         std::string     getName() const;
         std::set<int>   getMembers() const;
         std::set<int>   getOperators() const;
+        bool            getTopicRestriction() const;
 
         // members
         bool            checkKey(const std::string& key) const;
