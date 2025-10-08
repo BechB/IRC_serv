@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/06 18:49:39 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/08 16:32:34 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,9 +52,12 @@ class Channel
         bool            getTopicRestriction() const;
 
         // members
+        bool            isOperator(int fd) const;
         bool            checkKey(const std::string& key) const;
+        
         void            addMember(int client_fd);
         void            addOperator(int client_fd);
         void            removeMember(int client_fd);
         void            removeOperator(int client_fd);
+        
 };

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/06 22:06:08 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/08 16:55:14 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,19 @@ static bool parseJoinParams(const std::string& params)
 
 	return true;
 }
+
+static std::vector<std::string> divideParams(const std::string& param)
+{
+	std::vector<std::string> params;
+	std::istringstream ss(param);
+	std::string word;
+	
+	while (ss >> word)
+		params.push_back(word);
+
+	return params;
+}
+
 
 Server::Server(int argc, char **argv)
 {
@@ -434,15 +447,7 @@ void Server::checkCommand(Client& client)
 {
 	std::string command = _cmd.first;
 	std::string parameter = _cmd.second;
-	// std::vector<std::string> params;
 
-	// std::istringstream iss(parameter);
-	// std::vector<std::string> params;
-	// std::string word;
-	
-	// while(iss >> word)
-	// 	params.push_back(word);
-	
 	std::cout << "command: " << command << std::endl;
 	std::cout << "parameter: " << parameter << std::endl;
 
@@ -476,9 +481,101 @@ void Server::checkCommand(Client& client)
 		return;
 	}
 
+	if (command == "MODE")
+	{
+		handleMODE(client, parameter);
+		return;
+	}
+
 	// autres if command..
 	
 	sendSystemMsg(client, "421", command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
+}
+
+
+
+void Server::handleMODE(const Client& client, const std::string& param)
+{
+	const std::vector<std::string>& params = divideParams(param);
+	const std::string& channelName = params[0];
+	
+	if (channelName.empty() || channelName[0] != '#')
+	{
+		sendSystemMsg(client, "403", ERR_NOSUCHCHANNEL);
+		return;
+	}
+
+	std::map<std::string, Channel>::iterator it_channel = _channels.find(channelName);
+	if (it_channel == _channels.end())
+	{
+		sendSystemMsg(client, "442", channelName + ERR_NOTONCHANNEL);
+		return;
+	}
+
+	const std::string& modes = params[1];
+
+	if (modes[0] != '+' && modes[0] != '-')
+	{
+		sendSystemMsg(client, "461", "MODE " ERR_NEEDMOREPARAMS);
+		return;
+	}
+	Channel& channel = it_channel->second;
+	
+	if (!channel.isOperator(client.getFd()))
+	{
+		sendSystemMsg(client, "482", channel.getName() + ERR_CHANOPRIVSNEEDED);
+		return;
+	}
+
+	for (size_t i = 1; i < modes.size(); ++i)
+	{
+		if (modes[i] == 'k')
+			kMode(client, params, channel);
+		else if (modes[i] == 't')
+			tMode();
+		else if (modes[i] == 'i')
+			iMode(client, params, channel);
+		else if (modes[i] == 'o')
+			oMode();
+		else if (modes[i] == 'l')
+			lMode();
+		else
+		{
+			sendSystemMsg(client, "472", modes[i] + ERR_UNKNOWNMODE);
+			return;
+		}
+	}
+	// Channel& channel = it_channel->second;
+}
+
+void Server::kMode(const Client& client, const std::vector<std::string>& params, Channel& channel)
+{
+	// params 0 = channel name
+	// params 1 = +|- modes
+	// params 2 = additionnal options (key, etc.)
+	if (params[1][0] == '-')
+	{
+		channel.setKey("");
+		return;
+	}
+
+	if (params[2].empty())
+	{
+		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
+		return;
+	}
+
+	channel.setKey(params[2]);
+	const std::string reply = ":" + _name + " 324 " + channel.getName() + " MODE : +k " + params[2];
+	const std::set<int>& members_fd = channel.getMembers();
+
+	for (std::set<int>::iterator it = members_fd.begin(); it != members_fd.end();++it)
+		send(*it, reply.c_str(), reply.size(), 0);
+}
+
+void Server::RPL_CHANNELMODEIS(const Client& client, const std::string& channelName)
+{
+	// <canal> <mode> <param de mode>
 }
 
 void Server::handleTOPIC(const Client& client, const std::string& param)
@@ -514,7 +611,7 @@ void Server::handleTOPIC(const Client& client, const std::string& param)
 	}
 	std::string newTopic;
 	std::getline(iss, newTopic); // get all the word until the end of params, start by #chanName and save in newTopic
-	
+
 	//  if only spaces
 	size_t start = newTopic.find_first_not_of(' ');
 	size_t end = newTopic.find_last_not_of(' ');
@@ -529,7 +626,19 @@ void Server::handleTOPIC(const Client& client, const std::string& param)
 	}
 	newTopic = newTopic.substr(start, end - start + 1);
 	channel.setTopic(newTopic);
-	RPL_TOPIC(client, channel);
+
+	// recup list fd du channel
+	const std::set<int>& members = channel.getMembers();
+	std::set<int>::iterator it_member = members.begin();
+	// envoyer RPL apres changement de topic a tous les clients du channel
+	for (; it_member != members.end(); ++it_member)
+	{		
+		std::map<int, Client>::const_iterator it_map = _clients.find(*it_member);
+		if (it_map != _clients.end())
+		{
+			RPL_TOPIC(it_map->second, channel);
+		}
+	}
 }
 
 
@@ -655,7 +764,6 @@ void Server::extractCmd(const std::string& message)
 	{
 		_cmd.first = message.substr(0, space);
 		_cmd.second = message.substr(space + 1);
-		const std::string lastt = _cmd.second;
 	}
 }
 
@@ -669,7 +777,6 @@ void Server::memberEnterChannel(const Client& client, int otherMemberFd, const C
 {
 	std::ostringstream oss;
 	oss << ":" << client.getNickname() << " JOIN " << channel.getName() << "\r\n";
-	// oss << ":" << client.getNickname() << "!" << client.getUsername() << "@" << _name << " JOIN #" << channel.getName() << "\r\n";
 	const std::string reply = oss.str();
 	if (send(otherMemberFd, reply.c_str(), reply.size(), 0) == -1)
 		std::cout << "send == -1" << std::endl;

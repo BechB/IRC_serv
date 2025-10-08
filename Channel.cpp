@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/06 22:04:34 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/08 16:33:26 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,6 +51,7 @@ std::set<int>       Channel::getOperators() const {return _operators;}
 
 
 // members
+bool                Channel::isOperator(int fd) const {return _operators.find(fd) != _operators.end();}
 bool                Channel::checkKey(const std::string& key) const {return _key == key;}
 void                Channel::addMember(int client_fd) {_members.insert(client_fd);}
 void                Channel::addOperator(int client_fd) {_operators.insert(client_fd);}

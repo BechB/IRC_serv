@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/06 21:56:32 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/08 16:40:34 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,7 +56,12 @@
 #define ERR_NOTONCHANNEL ":You're not on that channel" // 442
 #define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" // 471
 #define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" // 475
-#define ERR_CHANOPRIVSNEEDED ":You're not channel operator" // 482 
+#define ERR_CHANOPRIVSNEEDED " :You're not channel operator" // 482 
+
+// mode
+#define ERR_UNKNOWNMODE " :is unknown mode char to me" // 472
+
+
 
 class Client;
 class Channel;
@@ -101,7 +106,6 @@ class Server
 
 		
 		// COMMANDS
-		// void 	checkAuthenticate(Client& currentClient);
 		void 	checkCommand(Client& client);
 		void 	extractCmd(const std::string& message);
 		void	handlePASS(Client& client, const std::string& pass);
@@ -109,7 +113,9 @@ class Server
 		void	handleUSER(Client& client, const std::string& name);
 		void	handleJOIN(Client& client, const std::string& param);
 		void	handleTOPIC(const Client& client, const std::string& param);
-		
+		void 	handleMODE(const Client& client, const std::string& param);
+		void	kMode(const Client& client, const std::vector<std::string>& params, Channel& channel);
+
 		// client
 		bool    isValidName(const std::string& name) const;
 		void	broadcastNickChange(const Client& client);
@@ -118,6 +124,8 @@ class Server
 		void	createChannel(const std::string& channelName, const Client& currentClient);
 		bool	checkChannelPermissions(const Client& client, const Channel& channel) const;
 		void	memberEnterChannel(const Client& client, int otherMemberFd, const Channel& channel) const;
+		void	RPL_CHANNELMODEIS(const Client& client, const std::string& channelName);
+
 
 		// system msg
 		void	sendSystemMsg(const Client& client, const std::string& code, const std::string& errmsg) const;
