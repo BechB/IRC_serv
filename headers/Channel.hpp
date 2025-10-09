@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/08 16:32:34 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/09 15:18:48 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 #include <string>
 #include <set>
-
+#include <sys/socket.h>
 
 class Channel
 {
@@ -44,12 +44,12 @@ class Channel
         // getters
         int             getMemberLimit() const;
         bool            getInvitOnly() const;
+        bool            getTopicRestriction() const;
         std::string     getKey() const;
         std::string     getTopic() const;
         std::string     getName() const;
         std::set<int>   getMembers() const;
         std::set<int>   getOperators() const;
-        bool            getTopicRestriction() const;
 
         // members
         bool            isOperator(int fd) const;
@@ -59,5 +59,5 @@ class Channel
         void            addOperator(int client_fd);
         void            removeMember(int client_fd);
         void            removeOperator(int client_fd);
-        
+        void            broadcast(const std::string& message, int except_fd = -1) const;
 };

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/08 16:40:34 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/09 16:07:08 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,6 +113,7 @@ class Server
 		void	handleUSER(Client& client, const std::string& name);
 		void	handleJOIN(Client& client, const std::string& param);
 		void	handleTOPIC(const Client& client, const std::string& param);
+		void	handleWHO(const Client& client, const std::string& param);
 		void 	handleMODE(const Client& client, const std::string& param);
 		void	kMode(const Client& client, const std::vector<std::string>& params, Channel& channel);
 
