@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/10 13:19:25 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/10 15:40:12 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,7 +104,6 @@ class Server
 		void	initSystemMsgs();
 		bool	isNickExist(const std::string& nickname);
 
-		
 		// COMMANDS
 		void 	checkCommand(Client& client);
 		void 	extractCmd(const std::string& message);
@@ -126,7 +125,6 @@ class Server
 		void	createChannel(const std::string& channelName, const Client& currentClient);
 		bool	checkChannelPermissions(const Client& client, const Channel& channel) const;
 		// void	RPL_CHANNELMODEIS(const Client& client, const std::string& channelName);
-
 
 		// system msg
 		void	sendSystemMsg(const Client& client, const std::string& code, const std::string& errmsg) const;
