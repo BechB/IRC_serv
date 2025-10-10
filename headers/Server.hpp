@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/09 16:07:08 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/10 13:19:25 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@
 #define NICK_GRANTED "Nickname accepted. Please enter username with USER <name>"
 
 // miscelaneous
-#define ERR_NEEDMOREPARAMS ":Not enough parameters" // 461
+#define ERR_NEEDMOREPARAMS " :Not enough parameters" // 461
 #define ERR_UNKNOWNCOMMAND " :Unknown command" // 421
 
 // profile / authenticate
@@ -115,7 +115,8 @@ class Server
 		void	handleTOPIC(const Client& client, const std::string& param);
 		void	handleWHO(const Client& client, const std::string& param);
 		void 	handleMODE(const Client& client, const std::string& param);
-		void	kMode(const Client& client, const std::vector<std::string>& params, Channel& channel);
+		void	kMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
+		void	tMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
 
 		// client
 		bool    isValidName(const std::string& name) const;
@@ -124,8 +125,7 @@ class Server
 		// channels
 		void	createChannel(const std::string& channelName, const Client& currentClient);
 		bool	checkChannelPermissions(const Client& client, const Channel& channel) const;
-		void	memberEnterChannel(const Client& client, int otherMemberFd, const Channel& channel) const;
-		void	RPL_CHANNELMODEIS(const Client& client, const std::string& channelName);
+		// void	RPL_CHANNELMODEIS(const Client& client, const std::string& channelName);
 
 
 		// system msg

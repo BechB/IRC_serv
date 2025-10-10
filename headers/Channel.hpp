@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/09 15:18:48 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/10 14:10:00 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <string>
 #include <set>
 #include <sys/socket.h>
+#include <sstream>
 
 class Channel
 {
@@ -39,7 +40,9 @@ class Channel
         
         // specialized setters
         void            enableInvitOnly();
+        void            enableTopicRestriction();
         void            removeInvitOnly();
+        void            removeTopicRestriction();
 
         // getters
         int             getMemberLimit() const;
@@ -48,13 +51,14 @@ class Channel
         std::string     getKey() const;
         std::string     getTopic() const;
         std::string     getName() const;
+        std::string     getModes() const;
         std::set<int>   getMembers() const;
         std::set<int>   getOperators() const;
 
         // members
         bool            isOperator(int fd) const;
+        bool            isMember(int fd) const;
         bool            checkKey(const std::string& key) const;
-        
         void            addMember(int client_fd);
         void            addOperator(int client_fd);
         void            removeMember(int client_fd);

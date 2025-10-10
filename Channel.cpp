@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/09 11:52:53 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/10 14:22:33 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ Channel::Channel(const std::string &name, int creator_fd)
 {
     _memberLimit = -1;
     _invitOnly = false;
-    _topicRestricted = true;
+    _topicRestricted = false;
     _key = "";
     _topic = "";
     _name = name;
@@ -34,7 +34,10 @@ void Channel::setInvitOnly() {_invitOnly = true;}
 
 // specialized setters
 void Channel::enableInvitOnly() {_invitOnly = true;}
+void Channel::enableTopicRestriction() {_topicRestricted = true;}
+
 void Channel::removeInvitOnly() {_invitOnly = false;}
+void Channel::removeTopicRestriction() {_topicRestricted = false;}
 
 
 // getters
@@ -45,13 +48,42 @@ bool Channel::getTopicRestriction() const {return _topicRestricted;}
 std::string Channel::getKey() const {return _key;}
 std::string Channel::getTopic() const {return _topic;}
 std::string Channel::getName() const {return _name;}
+std::string Channel::getModes() const
+{
+    std::string modes = "+";
+    std::string args = "";
+
+    if (_invitOnly)
+        modes += "i";
+
+    if (_topicRestricted)
+        modes += "t";
+
+    if (!_key.empty())
+    {
+        modes += "k";    
+        args += " " + _key;
+    }
+
+    if (_memberLimit > 0)
+    {
+        modes += "o";
+        std::stringstream iss;
+        iss << _memberLimit;
+        std::string converted = iss.str();
+        args += converted;   
+    }
+
+    return modes + " " + args;
+}
+
 std::set<int> Channel::getMembers() const {return _members;}
 std::set<int> Channel::getOperators() const {return _operators;}
 
 
-
 // members
 bool Channel::isOperator(int fd) const {return _operators.find(fd) != _operators.end();}
+bool Channel::isMember(int fd) const {return _members.find(fd) != _members.end();}
 bool Channel::checkKey(const std::string& key) const {return _key == key;}
 void Channel::addMember(int client_fd) {_members.insert(client_fd);}
 void Channel::addOperator(int client_fd) {_operators.insert(client_fd);}

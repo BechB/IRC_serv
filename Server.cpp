@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/09 18:50:19 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/10 14:56:56 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -520,6 +520,11 @@ void Server::handleWHO(const Client& client, const std::string& param)
 
 void Server::handleMODE(const Client& client, const std::string& param)
 {
+	// params 0 = channel name
+	// params 1 = +|- modes
+	// params 2 = optionnal args 
+
+	std::cout << "TAILLE DE PARAM: " << param.size() << std::endl;
 	const std::vector<std::string>& params = divideParams(param);
 	const std::string& channelName = params[0];
 	
@@ -536,6 +541,7 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		return;
 	}
 	
+	//***** a refaire 
 	if (params.size() < 2) // prevent when irc launch "/MODE #channel" automatically without params[1] when client use "/JOIN #channel"
 	{
 		std::map<std::string, Channel>::iterator it = _channels.find(channelName);
@@ -555,7 +561,20 @@ void Server::handleMODE(const Client& client, const std::string& param)
 
     	return;
 	}
+	// ******
+
+	Channel& channel = it_channel->second;
 	
+	if (params.size() == 2)
+	{
+		std::cout << "on rentre ici" << std::endl;
+		const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + " " + channel.getModes() + "\r\n";
+		send(client.getFd(), "DEBUG", 5, 0);
+		send(client.getFd(), reply.c_str(), reply.size(), 0);
+
+		return;
+	}
+
 	const std::string& modes = params[1];
 
 	if (modes[0] != '+' && modes[0] != '-')
@@ -563,20 +582,18 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		sendSystemMsg(client, "461", "MODE " ERR_NEEDMOREPARAMS);
 		return;
 	}
-	Channel& channel = it_channel->second;
-	
 	if (!channel.isOperator(client.getFd()))
 	{
 		sendSystemMsg(client, "482", channel.getName() + ERR_CHANOPRIVSNEEDED);
 		return;
 	}
-
+	// i = 1 -> skip the '+' / '-'
 	for (size_t i = 1; i < modes.size(); ++i)
 	{
 		if (modes[i] == 'k')
-			kMode(client, params, channel);
-		// else if (modes[i] == 't')
-		// 	tMode();
+			kMode(client, channel, params);
+		else if (modes[i] == 't')
+			tMode(client, channel, params);
 		// else if (modes[i] == 'i')
 		// 	iMode(client, params, channel);
 		// else if (modes[i] == 'o')
@@ -585,20 +602,36 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		// 	lMode();
 		else
 		{
-			sendSystemMsg(client, "472", modes[i] + ERR_UNKNOWNMODE);
+			sendSystemMsg(client, "472", std::string(1, modes[i]) + ERR_UNKNOWNMODE);
 			return;
 		}
 	}
 	// Channel& channel = it_channel->second;
 }
 
-void Server::kMode(const Client& client, const std::vector<std::string>& params, Channel& channel)
+void Server::tMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
+{
+	if (params.size() > 2)
+    {
+        sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
+        return;
+    }
+
+	if (params[1][0] == '-')
+		channel.removeTopicRestriction();
+	else
+		channel.enableTopicRestriction();
+	
+	bool trestric = channel.getTopicRestriction() ? true : false;
+	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + (trestric ? " +t\r\n" : " -t\r\n");
+	channel.broadcast(reply);
+}
+
+void Server::kMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
 {
 	// params 0 = channel name
 	// params 1 = +|- modes
-	// params 2 = additionnal options (key, etc.)
-	const std::set<int>& members_fd = channel.getMembers();
-
+	// params 2 = key 
 	if (params[1][0] == '-')
 	{
 		channel.setKey("");
@@ -705,15 +738,15 @@ void Server::handleJOIN(Client& client, const std::string& param)
 		sendSystemMsg(client, "451", ERR_NOTREGISTERED);
 		return;
 	}
-
-	std::string channelName = param;
+	
+	const std::vector<std::string>& params = divideParams(param);	
+	const std::string& channelName = params[0];
 	
 	if (channelName.find_first_of('#', 0) == std::string::npos)
 	{
 		sendSystemMsg(client, "403", ERR_NOSUCHCHANNEL);
 		return;
 	}
-
 	std::map<std::string, Channel>::iterator channel_it = _channels.find(channelName);
 
 	// channel part
@@ -730,20 +763,9 @@ void Server::handleJOIN(Client& client, const std::string& param)
 	client.joinChannel(channelName);
 	
 	channel_it = _channels.find(channelName);
-	const std::set<int>& members = channel_it->second.getMembers();
-	std::set<int>::iterator member_it = members.begin();
 
-	if (member_it == members.end())
-	{
-		std::cout << "member_it failed" << std::endl;
-		return;
-	}
-	
-	for (; member_it != members.end(); ++member_it)
-	{
-		int fd = *member_it;
-		memberEnterChannel(client, fd, channel_it->second);
-	}
+	const std::string reply = ":" + client.getNickname() + " JOIN " + channel_it->first;
+	channel_it->second.broadcast(reply);
 
 	if (channel_it->second.getTopic().empty())
 		RPL_NOTOPIC(client, channel_it->second);
@@ -752,7 +774,6 @@ void Server::handleJOIN(Client& client, const std::string& param)
 
 	handleWHO(client, channel_it->first);
 }
-
 
 bool Server::checkChannelPermissions(const Client& client, const Channel& channel) const
 {
@@ -765,7 +786,6 @@ bool Server::checkChannelPermissions(const Client& client, const Channel& channe
 		return false;
 	}
 	
-	std::cout << "Segfault ?????? " << std::endl;
 	if (!channel.getKey().empty())
 	{
 		// params[0] = #chan, params[1] = key (optionnal)
@@ -814,14 +834,14 @@ void Server::sendSystemMsg(const Client& client, const std::string& code, const 
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
 
-void Server::memberEnterChannel(const Client& client, int otherMemberFd, const Channel& channel) const
-{
-	std::ostringstream oss;
-	oss << ":" << client.getNickname() << " JOIN " << channel.getName() << "\r\n";
-	const std::string reply = oss.str();
-	if (send(otherMemberFd, reply.c_str(), reply.size(), 0) == -1)
-		std::cout << "send == -1" << std::endl;
-}
+// void Server::memberEnterChannel(const Client& client, int otherMemberFd, const Channel& channel) const
+// {
+// 	std::ostringstream oss;
+// 	oss << ":" << client.getNickname() << " JOIN " << channel.getName() << "\r\n";
+// 	const std::string reply = oss.str();
+// 	if (send(otherMemberFd, reply.c_str(), reply.size(), 0) == -1)
+// 		std::cout << "send == -1" << std::endl;
+// }
 
 void Server::RPL_TOPIC(const Client& client, const Channel& channel) const
 {
