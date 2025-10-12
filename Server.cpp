@@ -526,6 +526,12 @@ void Server::handleMODE(const Client& client, const std::string& param)
 
 	std::cout << "TAILLE DE PARAM: " << param.size() << std::endl;
 	const std::vector<std::string>& params = divideParams(param);
+	if (params.empty())
+	{
+		sendSystemMsg(client, "461", "MODE " ERR_NEEDMOREPARAMS);
+		return;
+	}
+
 	const std::string& channelName = params[0];
 	
 	if (channelName.empty() || channelName[0] != '#')
@@ -541,37 +547,12 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		return;
 	}
 	
-	//***** a refaire 
-	if (params.size() < 2) // prevent when irc launch "/MODE #channel" automatically without params[1] when client use "/JOIN #channel"
-	{
-		std::map<std::string, Channel>::iterator it = _channels.find(channelName);
-		if (it != _channels.end())
-		{
-			const Channel& chan = it->second;
-			std::string currentModes;
-
-			if (!chan.getKey().empty())
-				currentModes += "+k " + chan.getKey();
-			else
-				currentModes = "+";
-
-			std::string reply = ":" + _name + " 324 " + client.getNickname() + " " + chan.getName() + " " + currentModes + "\r\n";
-			send(client.getFd(), reply.c_str(), reply.size(), 0);
-   		}
-
-    	return;
-	}
-	// ******
-
 	Channel& channel = it_channel->second;
-	
-	if (params.size() == 2)
-	{
-		std::cout << "on rentre ici" << std::endl;
-		const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + " " + channel.getModes() + "\r\n";
-		send(client.getFd(), "DEBUG", 5, 0);
-		send(client.getFd(), reply.c_str(), reply.size(), 0);
 
+	if (params.size() < 2)
+	{
+		std::string reply = ":" + _name + " 324 " + client.getNickname() + " " + channel.getName() + " " + channel.getModes() + "\r\n";
+		send(client.getFd(), reply.c_str(), reply.size(), 0);
 		return;
 	}
 
@@ -582,11 +563,13 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		sendSystemMsg(client, "461", "MODE " ERR_NEEDMOREPARAMS);
 		return;
 	}
+
 	if (!channel.isOperator(client.getFd()))
 	{
 		sendSystemMsg(client, "482", channel.getName() + ERR_CHANOPRIVSNEEDED);
 		return;
 	}
+
 	// i = 1 -> skip the '+' / '-'
 	for (size_t i = 1; i < modes.size(); ++i)
 	{
@@ -764,7 +747,7 @@ void Server::handleJOIN(Client& client, const std::string& param)
 	
 	channel_it = _channels.find(channelName);
 
-	const std::string reply = ":" + client.getNickname() + " JOIN " + channel_it->first;
+	const std::string reply = ":" + client.getNickname() + " JOIN " + channel_it->first + "\r\n";
 	channel_it->second.broadcast(reply);
 
 	if (channel_it->second.getTopic().empty())

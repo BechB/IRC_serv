@@ -10,28 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <string>
-#include <cstdlib>
-#include <cctype>
-#include <iostream>
-#include <poll.h>
-#include <string>
-#include <cstdlib>
-#include <cctype>
-#include <iostream>
-#include <poll.h>
-#include <limits>
-#include <cerrno>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>   // pour close()
-#include <stdio.h>
-#include <vector>
-#include "headers/Server.hpp"
 
+#include "headers/Server.hpp"
+ 
 
 /*
 
@@ -134,7 +115,7 @@ int main(int argc, char **argv)
 	// mettre le socket en mode non bloquant :fcntl(_sockfd, F_SETFL, O_NONBLOCK);
 	// car on ne dois jamais faire de blocage I/O;
 
-	//etape 2
+	//etape 2B
 	/*
 	prepare une struct sockaddr_in
 	adresse : INADDR_ANY(0.0.0.0) pour ecouter sur toutes les interfaces, on fait pas ca.

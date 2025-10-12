@@ -13,6 +13,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 #include <string>
 #include <utility> // std::pair
 #include <poll.h>
@@ -20,7 +21,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h>
+#include <unistd.h> // pour close()
 #include <fcntl.h>
 #include <cerrno>
 #include <limits>
@@ -28,7 +29,9 @@
 #include <cstdio>
 #include <iostream>
 #include <cstdlib>
+#include <stdio.h>
 #include <sstream>
+#include <cctype>
 #include "Client.hpp"
 #include "Channel.hpp"
 
