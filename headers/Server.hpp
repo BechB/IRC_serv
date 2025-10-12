@@ -34,6 +34,7 @@
 #include <cctype>
 #include "Client.hpp"
 #include "Channel.hpp"
+#include "utils.hpp"
 
 #define CMD_INFO_PASS "Please enter password with PASS <password>"
 #define CMD_INFO_NICK "Please choose a nickname with NICK <nickname>"
@@ -119,6 +120,7 @@ class Server
 		void 	handleMODE(const Client& client, const std::string& param);
 		void	kMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
 		void	tMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
+		void	lMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
 
 		// client
 		bool    isValidName(const std::string& name) const;

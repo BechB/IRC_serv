@@ -43,6 +43,7 @@ class Channel
         void            enableTopicRestriction();
         void            removeInvitOnly();
         void            removeTopicRestriction();
+        void            removeLimit();
 
         // getters
         int             getMemberLimit() const;
