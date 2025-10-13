@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/13 15:42:02 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/13 15:43:59 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,5 +67,6 @@ class Channel
         void            addInvited(int client_fd);
         void            removeMember(int client_fd);
         void            removeOperator(int client_fd);
+        void            removeInvited(int client_fd);
         void            broadcast(const std::string& message, int except_fd = -1) const;
 };

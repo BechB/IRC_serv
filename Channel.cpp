@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/10 14:22:33 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/13 15:44:29 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,8 +87,10 @@ bool Channel::isMember(int fd) const {return _members.find(fd) != _members.end()
 bool Channel::checkKey(const std::string& key) const {return _key == key;}
 void Channel::addMember(int client_fd) {_members.insert(client_fd);}
 void Channel::addOperator(int client_fd) {_operators.insert(client_fd);}
+void Channel::addInvited(int client_fd) {_invited.insert(client_fd);}
 void Channel::removeMember(int client_fd) {_members.erase(client_fd);}
 void Channel::removeOperator(int client_fd) {_operators.erase(client_fd);}
+void Channel::removeInvited(int client_fd) {_invited.erase(client_fd);}
 
 void Channel::broadcast(const std::string& msg, int except_fd) const
 {
