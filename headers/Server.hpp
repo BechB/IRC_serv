@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/13 15:30:25 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/13 18:06:48 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,14 +56,14 @@
 #define ERR_PASSWDMISMATCH ":Password incorrect" // 464
 
 // channel
-#define ERR_NOSUCHCHANNEL "JOIN :No such channel" // 403
+#define ERR_NOSUCHNICK " :No such nick/channel" // 401
+#define ERR_NOSUCHCHANNEL " :No such channel" // 403
+#define ERR_USERNOTINCHANNEL ":They aren't on that channel" // 441
 #define ERR_NOTONCHANNEL ":You're not on that channel" // 442
 #define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" // 471
+#define ERR_INVITEONLYCHAN " :Cannot join channel (+i)" // 473
 #define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" // 475
 #define ERR_CHANOPRIVSNEEDED " :You're not channel operator" // 482 
-#define ERR_NOSUCHNICK " :No such nick/channel" // 401
-#define ERR_USERNOTINCHANNEL ":They aren't on that channel" // 441
-
 // mode
 #define ERR_UNKNOWNMODE " :is unknown mode char to me" // 472
 
@@ -122,8 +122,9 @@ class Server
 		void 	handleMODE(const Client& client, const std::string& param);
 		void	kMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
 		void	tMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
-		void	lMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
+		void	iMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
 		void	oMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
+		void	lMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
 
 		// client
 		void	broadcastNickChange(const Client& client);

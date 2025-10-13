@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/13 15:33:09 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/13 18:06:28 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -500,18 +500,18 @@ void Server::checkCommand(Client& client)
 void Server::handleWHO(const Client& client, const std::string& param)
 {
     std::string channelName = param;
-    if (channelName.empty() || channelName[0] != '#')
-    {
-        sendSystemMsg(client, "403", "WHO " ERR_NOSUCHCHANNEL);
-        return;
-    }
-
     std::map<std::string, Channel>::iterator it = _channels.find(channelName);
-    if (it == _channels.end())
+    if (channelName.empty() || channelName[0] != '#' || it == _channels.end())
     {
         sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
         return;
     }
+
+    // if (it == _channels.end())
+    // {
+    //     sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
+    //     return;
+    // }
 
     RPL_NAMREPLY(client, it->second);
     RPL_ENDOFNAMES(client, it->second);
@@ -523,12 +523,11 @@ void Server::handleMODE(const Client& client, const std::string& param)
 	// params 0 = channel name
 	// params 1 = +|- modes
 	// params 2 = optionnal args 
-
-	std::cout << "TAILLE DE PARAM: " << param.size() << std::endl;
 	const std::vector<std::string>& params = divideParams(param);
+	
 	if (params.empty())
 	{
-		sendSystemMsg(client, "461", "MODE " ERR_NEEDMOREPARAMS);
+		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
 		return;
 	}
 
@@ -536,7 +535,7 @@ void Server::handleMODE(const Client& client, const std::string& param)
 	
 	if (channelName.empty() || channelName[0] != '#')
 	{
-		sendSystemMsg(client, "403", ERR_NOSUCHCHANNEL);
+		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
 
@@ -578,8 +577,8 @@ void Server::handleMODE(const Client& client, const std::string& param)
 			kMode(client, channel, params);
 		else if (modes[i] == 't')
 			tMode(client, channel, params);
-		// else if (modes[i] == 'i')
-		// 	iMode(client, params, channel);
+		else if (modes[i] == 'i')
+			iMode(client, channel, params);
 		else if (modes[i] == 'o')
 			oMode(client, channel, params);
 		else if (modes[i] == 'l')
@@ -590,9 +589,25 @@ void Server::handleMODE(const Client& client, const std::string& param)
 			return;
 		}
 	}
-	// Channel& channel = it_channel->second;
 }
 
+void Server::iMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
+{
+	if (params.size() > 2)
+	{
+		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
+		return;
+	}
+
+	if (params[1][0] == '-')
+		channel.removeInvitOnly();
+	else
+		channel.enableInvitOnly();
+	
+	bool irestrict = channel.getInvitOnly() ? true : false;
+	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + (irestrict ? " +i\r\n" : " -i\r\n");
+	channel.broadcast(reply);
+}
 
 std::map<int, Client>::const_iterator Server::findClientByNick(const std::string& nickname) const
 {
@@ -608,14 +623,14 @@ std::map<int, Client>::const_iterator Server::findClientByNick(const std::string
 
 void Server::oMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
 {
-	const std::string& target = params[2];
 	
-	if (target.empty())
+	if (params[1][0] != '#' || params.size() < 2 || params[2].empty())
 	{
 		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
 		return;
 	}
 	
+	const std::string& target = params[2];
 	std::map<int, Client>::const_iterator it_client = findClientByNick(target);
 	if (it_client == _clients.end())
 	{
@@ -736,7 +751,7 @@ void Server::handleTOPIC(const Client& client, const std::string& param)
 
 	if (channelName.empty() || channelName[0] != '#')
 	{
-		sendSystemMsg(client, "403", ERR_NOSUCHCHANNEL);
+		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
 
@@ -817,9 +832,16 @@ void Server::handleJOIN(Client& client, const std::string& param)
 	
 	if (channelName.find_first_of('#', 0) == std::string::npos)
 	{
-		sendSystemMsg(client, "403", ERR_NOSUCHCHANNEL);
+		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
+	
+	if (channelName == "#")
+	{
+		sendSystemMsg(client, "461", "JOIN" ERR_NEEDMOREPARAMS);
+		return;
+	}
+	
 	std::map<std::string, Channel>::iterator channel_it = _channels.find(channelName);
 
 	// channel part
@@ -832,7 +854,7 @@ void Server::handleJOIN(Client& client, const std::string& param)
 
 		channel_it->second.addMember(client.getFd());
 	}
-
+	
 	client.joinChannel(channelName);
 	
 	channel_it = _channels.find(channelName);
@@ -859,6 +881,17 @@ bool Server::checkChannelPermissions(const Client& client, const Channel& channe
 		return false;
 	}
 	
+	if (channel.getInvitOnly())
+	{
+		const std::set<int>& invited = channel.getInvited();
+		std::set<int>::const_iterator client_fd = invited.find(client.getFd());
+		if (client_fd == invited.end())
+		{
+			sendSystemMsg(client, "473", channel.getName() + ERR_INVITEONLYCHAN);
+			return false;
+		}
+	}
+
 	if (!channel.getKey().empty())
 	{
 		// params[0] = #chan, params[1] = key (optionnal)

@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/13 15:43:59 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/13 18:08:49 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,8 +59,9 @@ class Channel
         std::set<int>   getInvited() const;
 
         // members
-        bool            isOperator(int fd) const;
-        bool            isMember(int fd) const;
+        bool            isOperator(int client_fd) const;
+        bool            isMember(int client_fd) const;
+        bool            isInvited(int client_fd) const;
         bool            checkKey(const std::string& key) const;
         void            addMember(int client_fd);
         void            addOperator(int client_fd);
