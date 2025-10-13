@@ -17,6 +17,7 @@ SRC = main.cpp \
 		Command.cpp \
 		Client.cpp \
 		Channel.cpp \
+		utils.cpp \
 
 OBJ = $(SRC:.cpp=.o)
 

@@ -38,7 +38,7 @@ void Channel::enableTopicRestriction() {_topicRestricted = true;}
 
 void Channel::removeInvitOnly() {_invitOnly = false;}
 void Channel::removeTopicRestriction() {_topicRestricted = false;}
-
+void Channel::removeLimit() {_memberLimit = -1;}
 
 // getters
 int  Channel::getMemberLimit() const {return _memberLimit;}
@@ -62,12 +62,12 @@ std::string Channel::getModes() const
     if (!_key.empty())
     {
         modes += "k";    
-        args += " " + _key;
+        args += _key + " ";
     }
 
     if (_memberLimit > 0)
     {
-        modes += "o";
+        modes += "l";
         std::stringstream iss;
         iss << _memberLimit;
         std::string converted = iss.str();

@@ -549,6 +549,7 @@ void Server::handleMODE(const Client& client, const std::string& param)
 	
 	Channel& channel = it_channel->second;
 
+	// if only #channel in params (/MODE #channel)
 	if (params.size() < 2)
 	{
 		std::string reply = ":" + _name + " 324 " + client.getNickname() + " " + channel.getName() + " " + channel.getModes() + "\r\n";
@@ -560,7 +561,7 @@ void Server::handleMODE(const Client& client, const std::string& param)
 
 	if (modes[0] != '+' && modes[0] != '-')
 	{
-		sendSystemMsg(client, "461", "MODE " ERR_NEEDMOREPARAMS);
+		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
 		return;
 	}
 
@@ -581,8 +582,8 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		// 	iMode(client, params, channel);
 		// else if (modes[i] == 'o')
 		// 	oMode();
-		// else if (modes[i] == 'l')
-		// 	lMode();
+		else if (modes[i] == 'l')
+			lMode(client, channel, params);
 		else
 		{
 			sendSystemMsg(client, "472", std::string(1, modes[i]) + ERR_UNKNOWNMODE);
@@ -590,6 +591,39 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		}
 	}
 	// Channel& channel = it_channel->second;
+}
+
+void Server::lMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
+{
+	const std::string& limit = params[2];
+
+	if (params[1][0] == '-')
+	{
+		if (params.size() > 2)
+		{
+			sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
+			
+			return;
+		}
+		
+		channel.removeLimit();
+		const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + " -l\r\n";
+		channel.broadcast(reply);
+
+		return;
+	}
+
+		
+	if (!isOnlyDigit(limit) || limit == "0" || limit[0] == '-' || limit.size() > 3)
+	{
+		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
+		return;
+	}
+
+	channel.setLimit(std::atoi(limit.c_str()));
+
+	std::string reply = ":" + client.getNickname() + "!" + client.getUsername() +  "@" + _name + " MODE " + channel.getName() + " +l " + params[2] + "\r\n";
+	channel.broadcast(reply);
 }
 
 void Server::tMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
@@ -630,8 +664,8 @@ void Server::kMode(const Client& client, Channel& channel, const std::vector<std
 		
 		return;
 	}
-
-	std::string reply = ":" + client.getNickname() + "!" + client.getUsername() +  "@" + _name + " MODE " + channel.getName() + " +k " + params[2] + "\r\n";	channel.setKey(params[2]);
+	channel.setKey(params[2]);
+	std::string reply = ":" + client.getNickname() + "!" + client.getUsername() +  "@" + _name + " MODE " + channel.getName() + " +k " + params[2] + "\r\n";
 	channel.broadcast(reply);
 }
 
