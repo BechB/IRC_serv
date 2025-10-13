@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/10 14:10:00 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/13 15:42:02 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class Channel
         std::string     _name;
         std::set<int>   _operators;
         std::set<int>   _members;
+        std::set<int>   _invited;
 
     public:
         Channel(const std::string &name, int creator_fd);
@@ -55,6 +56,7 @@ class Channel
         std::string     getModes() const;
         std::set<int>   getMembers() const;
         std::set<int>   getOperators() const;
+        std::set<int>   getInvited() const;
 
         // members
         bool            isOperator(int fd) const;
@@ -62,6 +64,7 @@ class Channel
         bool            checkKey(const std::string& key) const;
         void            addMember(int client_fd);
         void            addOperator(int client_fd);
+        void            addInvited(int client_fd);
         void            removeMember(int client_fd);
         void            removeOperator(int client_fd);
         void            broadcast(const std::string& message, int except_fd = -1) const;

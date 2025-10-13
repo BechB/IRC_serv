@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/10 14:56:56 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/13 15:33:09 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -580,8 +580,8 @@ void Server::handleMODE(const Client& client, const std::string& param)
 			tMode(client, channel, params);
 		// else if (modes[i] == 'i')
 		// 	iMode(client, params, channel);
-		// else if (modes[i] == 'o')
-		// 	oMode();
+		else if (modes[i] == 'o')
+			oMode(client, channel, params);
 		else if (modes[i] == 'l')
 			lMode(client, channel, params);
 		else
@@ -591,6 +591,63 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		}
 	}
 	// Channel& channel = it_channel->second;
+}
+
+
+std::map<int, Client>::const_iterator Server::findClientByNick(const std::string& nickname) const
+{
+	std::map<int, Client>::const_iterator it_client = _clients.begin();
+
+	for(; it_client != _clients.end(); ++it_client)
+	{
+		if (it_client->second.getNickname() == nickname)
+			break;
+	}
+	return it_client;
+}
+
+void Server::oMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
+{
+	const std::string& target = params[2];
+	
+	if (target.empty())
+	{
+		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
+		return;
+	}
+	
+	std::map<int, Client>::const_iterator it_client = findClientByNick(target);
+	if (it_client == _clients.end())
+	{
+		sendSystemMsg(client, "401", "MODE " + target +  ERR_NOSUCHNICK);
+		return;
+	}
+	
+	int client_fd = it_client->first;
+	
+	if (!channel.isMember(client_fd))
+	{
+		sendSystemMsg(client, "441", "MODE " + target + " " + channel.getName() + ERR_USERNOTINCHANNEL);
+		return;
+	}
+	
+	if (params[1][0] == '-')
+	{
+		if (!channel.isOperator(client_fd))
+			return;
+		
+		channel.removeOperator(client_fd);
+		const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + " -o " + target + "\r\n";
+		channel.broadcast(reply);
+		return;
+	}
+
+	if (channel.isOperator(client_fd))
+		return;
+
+	channel.addOperator(client_fd);
+	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + " +o " + target + "\r\n";
+	channel.broadcast(reply);
 }
 
 void Server::lMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
@@ -612,7 +669,7 @@ void Server::lMode(const Client& client, Channel& channel, const std::vector<std
 
 		return;
 	}
-
+	
 		
 	if (!isOnlyDigit(limit) || limit == "0" || limit[0] == '-' || limit.size() > 3)
 	{
@@ -747,7 +804,6 @@ bool Server::isNickExist(const std::string& nickname)
 	return false;
 }
 
-
 void Server::handleJOIN(Client& client, const std::string& param)
 {
 	if (!client.getIsRegistred())
@@ -851,15 +907,6 @@ void Server::sendSystemMsg(const Client& client, const std::string& code, const 
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
 
-// void Server::memberEnterChannel(const Client& client, int otherMemberFd, const Channel& channel) const
-// {
-// 	std::ostringstream oss;
-// 	oss << ":" << client.getNickname() << " JOIN " << channel.getName() << "\r\n";
-// 	const std::string reply = oss.str();
-// 	if (send(otherMemberFd, reply.c_str(), reply.size(), 0) == -1)
-// 		std::cout << "send == -1" << std::endl;
-// }
-
 void Server::RPL_TOPIC(const Client& client, const Channel& channel) const
 {
 	std::string reply = ":" + _name + " 332 " +  client.getNickname() + " " + channel.getName() + " " + channel.getTopic() + "\r\n";
@@ -871,25 +918,6 @@ void Server::RPL_NOTOPIC(const Client& client, const Channel& channel) const
 {
 	std::string reply = ":" + _name + " 331 " +  client.getNickname() + " " + channel.getName() + " " + "No topic is set\r\n";
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
-}
-
-bool Server::isValidName(const std::string& name) const
-{
-    const int maxSize = 10;
-    const std::string authorizedChars =
-        "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "0123456789";
-
-    if (name.empty() || name.size() > maxSize)
-        return false;
-
-    for (size_t i = 0; i < name.size(); ++i)
-    {
-        if (authorizedChars.find(name[i]) == std::string::npos)
-            return false;
-    }
-    return true;
 }
 
 void Server::RPL_NAMREPLY(const Client& client, const Channel& channel) const

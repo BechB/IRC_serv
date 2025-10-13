@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.cpp                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/13 14:19:35 by aldalmas          #+#    #+#             */
+/*   Updated: 2025/10/13 14:19:36 by aldalmas         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <iostream>
 
 bool isOnlyDigit(const std::string& str)
@@ -8,5 +20,24 @@ bool isOnlyDigit(const std::string& str)
             return false;
     }
 
+    return true;
+}
+
+bool isValidName(const std::string& name)
+{
+    const int maxSize = 10;
+    const std::string authorizedChars =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789";
+
+    if (name.empty() || name.size() > maxSize)
+        return false;
+
+    for (size_t i = 0; i < name.size(); ++i)
+    {
+        if (authorizedChars.find(name[i]) == std::string::npos)
+            return false;
+    }
     return true;
 }
