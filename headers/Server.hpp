@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/13 18:06:48 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/14 17:01:56 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,14 +59,14 @@
 #define ERR_NOSUCHNICK " :No such nick/channel" // 401
 #define ERR_NOSUCHCHANNEL " :No such channel" // 403
 #define ERR_USERNOTINCHANNEL ":They aren't on that channel" // 441
-#define ERR_NOTONCHANNEL ":You're not on that channel" // 442
+#define ERR_NOTONCHANNEL " :You're not on that channel" // 442
+#define ERR_USERONCHANNEL " :is already on channel" // 443
 #define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" // 471
 #define ERR_INVITEONLYCHAN " :Cannot join channel (+i)" // 473
 #define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" // 475
 #define ERR_CHANOPRIVSNEEDED " :You're not channel operator" // 482 
 // mode
 #define ERR_UNKNOWNMODE " :is unknown mode char to me" // 472
-
 
 
 class Client;
@@ -99,6 +99,7 @@ class Server
 		~Server();
 
 		// getters
+		int								getClientFd(const std::string& nickname) const;
 		std::string 					getName() const;
 		std::map<int, Client> 			getClients() const;
 		std::map<std::string, Channel>	getChannels() const;
@@ -117,7 +118,9 @@ class Server
 		void	handleNICK(Client& client, const std::string& name);
 		void	handleUSER(Client& client, const std::string& name);
 		void	handleJOIN(Client& client, const std::string& param);
+		void	handleKICK(const Client& client, const std::string& param);
 		void	handleTOPIC(const Client& client, const std::string& param);
+		void	handleINVITE(const Client& client, const std::string&param);
 		void	handleWHO(const Client& client, const std::string& param);
 		void 	handleMODE(const Client& client, const std::string& param);
 		void	kMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
@@ -127,18 +130,20 @@ class Server
 		void	lMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
 
 		// client
-		void	broadcastNickChange(const Client& client);
 		std::map<int, Client>::const_iterator findClientByNick(const std::string& nickname) const;
-		// bool	findClientByNick(const std::string& nickname) const;
+
 		// channels
 		void	createChannel(const std::string& channelName, const Client& currentClient);
 		bool	checkChannelPermissions(const Client& client, const Channel& channel) const;
+		std::map<std::string, Channel>::iterator	findChannel(const std::string& channelName);
 		// void	RPL_CHANNELMODEIS(const Client& client, const std::string& channelName);
 
 		// system msg
+		void	broadcastNickChange(const Client& client);
 		void	sendSystemMsg(const Client& client, const std::string& code, const std::string& errmsg) const;
 		void	RPL_TOPIC(const Client& cli, const Channel& channel) const;
 		void	RPL_NOTOPIC(const Client& client, const Channel& channel) const;
 		void	RPL_NAMREPLY(const Client& client, const Channel& channel) const;
 		void	RPL_ENDOFNAMES(const Client& client, const Channel& channel) const;
+		void	RPL_INVITING(const Client& client, const std::string& guestName, int guestFd, const std::string& channelName) const;
 };

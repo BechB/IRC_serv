@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/13 18:08:49 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/14 14:07:06 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ class Channel
         std::string     _name;
         std::set<int>   _operators;
         std::set<int>   _members;
-        std::set<int>   _invited;
+        std::set<int>   _guests;
 
     public:
         Channel(const std::string &name, int creator_fd);
@@ -56,18 +56,18 @@ class Channel
         std::string     getModes() const;
         std::set<int>   getMembers() const;
         std::set<int>   getOperators() const;
-        std::set<int>   getInvited() const;
+        std::set<int>   getGuest() const;
 
         // members
         bool            isOperator(int client_fd) const;
         bool            isMember(int client_fd) const;
-        bool            isInvited(int client_fd) const;
+        bool            isGuest(int client_fd) const;
         bool            checkKey(const std::string& key) const;
         void            addMember(int client_fd);
         void            addOperator(int client_fd);
-        void            addInvited(int client_fd);
+        void            addGuest(int client_fd);
         void            removeMember(int client_fd);
         void            removeOperator(int client_fd);
-        void            removeInvited(int client_fd);
+        void            removeGuest(int client_fd);
         void            broadcast(const std::string& message, int except_fd = -1) const;
 };

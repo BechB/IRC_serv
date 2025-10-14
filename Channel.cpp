@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/13 18:09:23 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/14 14:07:06 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,20 +79,20 @@ std::string Channel::getModes() const
 
 std::set<int> Channel::getMembers() const {return _members;}
 std::set<int> Channel::getOperators() const {return _operators;}
-std::set<int> Channel::getInvited() const {return _invited;}
+std::set<int> Channel::getGuest() const {return _guests;}
 
 
 // members
 bool Channel::isOperator(int client_fd) const {return _operators.find(client_fd) != _operators.end();}
 bool Channel::isMember(int client_fd) const {return _members.find(client_fd) != _members.end();}
-bool Channel::isInvited(int client_fd) const {return _invited.find(client_fd) != _invited.end();}
+bool Channel::isGuest(int client_fd) const {return _guests.find(client_fd) != _guests.end();}
 bool Channel::checkKey(const std::string& key) const {return _key == key;}
 void Channel::addMember(int client_fd) {_members.insert(client_fd);}
 void Channel::addOperator(int client_fd) {_operators.insert(client_fd);}
-void Channel::addInvited(int client_fd) {_invited.insert(client_fd);}
+void Channel::addGuest(int client_fd) {_guests.insert(client_fd);}
 void Channel::removeMember(int client_fd) {_members.erase(client_fd);}
 void Channel::removeOperator(int client_fd) {_operators.erase(client_fd);}
-void Channel::removeInvited(int client_fd) {_invited.erase(client_fd);}
+void Channel::removeGuest(int client_fd) {_guests.erase(client_fd);}
 
 void Channel::broadcast(const std::string& msg, int except_fd) const
 {

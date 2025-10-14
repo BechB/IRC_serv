@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/13 18:06:28 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/14 17:27:26 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -448,9 +448,6 @@ void Server::checkCommand(Client& client)
 	std::string command = _cmd.first;
 	std::string parameter = _cmd.second;
 
-	std::cout << "command: " << command << std::endl;
-	std::cout << "parameter: " << parameter << std::endl;
-
 	if (command == "PASS")
 	{
 		handlePASS(client, parameter);
@@ -492,9 +489,132 @@ void Server::checkCommand(Client& client)
 		handleWHO(client, parameter);
 		return;
 	}
+
+	if (command == "INVITE")
+	{
+		handleINVITE(client, parameter);
+		return;
+	}
+
+	if (command == "KICK")
+	{
+		handleKICK(client, parameter);
+		return;
+	}
 	// autres if command..
 	
 	sendSystemMsg(client, "421", command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
+}
+
+void Server::handleKICK(const Client& client, const std::string& param)
+{
+	const std::vector<std::string>& params = divideParams(param);
+	const std::string& channelName = params[0];
+	const std::string& targetName = params[1];
+	const std::string& comment = params[2];
+
+	if (params.size() != 3 || channelName.empty() || targetName.empty())
+	{
+		sendSystemMsg(client, "461", "KICK" ERR_NEEDMOREPARAMS);
+		return;
+	}
+	
+	if (channelName[0] != '#')
+	{
+		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
+        return;
+	}
+
+	if (!isNickExist(targetName))
+	{
+		sendSystemMsg(client, "442", targetName + ERR_NOTONCHANNEL);
+		return;
+	}
+	
+	if () // todo
+}
+
+std::map<std::string, Channel>::iterator Server::findChannel(const std::string& channelName)
+{
+	std::map<std::string, Channel>::iterator it_chan = _channels.find(channelName);
+	return it_chan;
+}
+
+int Server::getClientFd(const std::string& nickname) const
+{
+	for (std::map<int, Client>::const_iterator it_client = _clients.begin(); it_client != _clients.end(); ++it_client)
+	{
+		if (it_client->second.getNickname() == nickname)
+			return it_client->first;
+	}
+
+	return -1;
+}
+
+// channel can not exist, invitation remains valid 
+void Server::handleINVITE(const Client& client, const std::string& param)
+{
+	const std::vector<std::string>& params = divideParams(param);
+	const std::string& targetChannel = params[1];
+	const std::string& targetNickname = params[0];
+	
+	if (targetChannel.empty() || targetNickname.empty() || params.size() < 2)
+	{
+		sendSystemMsg(client, "461", "INVITE" ERR_NEEDMOREPARAMS);
+		return;
+	}
+
+	if (targetChannel[0] != '#')
+	{
+		sendSystemMsg(client, "403", targetChannel + ERR_NOSUCHCHANNEL);
+        return;
+	}
+	
+	if (!isNickExist(targetNickname))
+	{
+		sendSystemMsg(client, "401", targetNickname + ERR_NOSUCHNICK);
+		return;
+	}
+	
+	int guestFd = getClientFd(targetNickname);
+	std::map<std::string, Channel>::iterator itChan = findChannel(targetChannel);
+	if (itChan != _channels.end())
+	{
+		Channel& channel = itChan->second;
+
+		if (!channel.isMember(client.getFd()))
+		{
+			sendSystemMsg(client, "442", targetChannel + ERR_NOTONCHANNEL);
+			return;
+		}
+		
+		if (channel.getInvitOnly() && !channel.isOperator(client.getFd()))
+		{
+			sendSystemMsg(client, "482", targetChannel + ERR_CHANOPRIVSNEEDED);
+			return;
+		}
+		
+		if (channel.isMember(guestFd))
+		{
+			sendSystemMsg(client, "443", targetNickname + ERR_USERONCHANNEL);
+			return;
+		}
+
+		// if -i, dont need to save the guest in the set<int> channel::_guests
+		if (channel.getInvitOnly())
+			channel.addGuest(guestFd);
+	}
+	
+	RPL_INVITING(client, targetNickname, guestFd, targetChannel);
+}
+
+void Server::RPL_INVITING(const Client& client, const std::string& guestName, int guestFd, const std::string& channelName) const
+{
+	std::string reply = ":" + _name + " 341 " +  client.getNickname() + " " + guestName + " " + channelName + "\r\n";
+	send(client.getFd(), reply.c_str(), reply.size(), 0);
+
+	std::string notify = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " INVITE " + guestName + " :" + channelName + "\r\n";
+	send(guestFd, notify.c_str(), notify.size(), 0);
 }
 
 void Server::handleWHO(const Client& client, const std::string& param)
@@ -516,7 +636,6 @@ void Server::handleWHO(const Client& client, const std::string& param)
     RPL_NAMREPLY(client, it->second);
     RPL_ENDOFNAMES(client, it->second);
 }
-
 
 void Server::handleMODE(const Client& client, const std::string& param)
 {
@@ -741,7 +860,6 @@ void Server::kMode(const Client& client, Channel& channel, const std::vector<std
 	channel.broadcast(reply);
 }
 
-
 void Server::handleTOPIC(const Client& client, const std::string& param)
 {
 	std::istringstream iss(param);
@@ -805,7 +923,6 @@ void Server::handleTOPIC(const Client& client, const std::string& param)
 	}
 }
 
-
 bool Server::isNickExist(const std::string& nickname)
 {
 	std::map<int, Client>::iterator it = _clients.begin();
@@ -829,45 +946,47 @@ void Server::handleJOIN(Client& client, const std::string& param)
 	
 	const std::vector<std::string>& params = divideParams(param);	
 	const std::string& channelName = params[0];
-	
 	if (channelName.find_first_of('#', 0) == std::string::npos)
 	{
 		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
-	
+
 	if (channelName == "#")
 	{
 		sendSystemMsg(client, "461", "JOIN" ERR_NEEDMOREPARAMS);
 		return;
 	}
 	
-	std::map<std::string, Channel>::iterator channel_it = _channels.find(channelName);
-
+	std::map<std::string, Channel>::iterator itChannel = _channels.find(channelName);
+	
 	// channel part
-    if (channel_it == _channels.end())
+    if (itChannel == _channels.end())
 		createChannel(channelName, client); // client will be added in the channel's ctor (in _members & _operators)
 	else
 	{
-		if (!checkChannelPermissions(client, channel_it->second))
+		if (!checkChannelPermissions(client, itChannel->second))
 			return;
 
-		channel_it->second.addMember(client.getFd());
+		itChannel->second.addMember(client.getFd());
 	}
 	
 	client.joinChannel(channelName);
-	
-	channel_it = _channels.find(channelName);
 
-	const std::string reply = ":" + client.getNickname() + " JOIN " + channel_it->first + "\r\n";
-	channel_it->second.broadcast(reply);
+	// +i is checked in checkChannelPermissions() and when a guest join a +i server , we must remove it from channel::_guests
+	if (itChannel->second.getInvitOnly())
+		itChannel->second.removeGuest(client.getFd());
+	itChannel = _channels.find(channelName);
 
-	if (channel_it->second.getTopic().empty())
-		RPL_NOTOPIC(client, channel_it->second);
+	const std::string reply = ":" + client.getNickname() + " JOIN " + channelName + "\r\n";
+	itChannel->second.broadcast(reply);
+
+	if (itChannel->second.getTopic().empty())
+		RPL_NOTOPIC(client, itChannel->second);
 	else
-		RPL_TOPIC(client, channel_it->second);
+		RPL_TOPIC(client, itChannel->second);
 
-	handleWHO(client, channel_it->first);
+	handleWHO(client, channelName);
 }
 
 bool Server::checkChannelPermissions(const Client& client, const Channel& channel) const
@@ -883,9 +1002,9 @@ bool Server::checkChannelPermissions(const Client& client, const Channel& channe
 	
 	if (channel.getInvitOnly())
 	{
-		const std::set<int>& invited = channel.getInvited();
-		std::set<int>::const_iterator client_fd = invited.find(client.getFd());
-		if (client_fd == invited.end())
+		const std::set<int>& guests = channel.getGuest();
+		std::set<int>::const_iterator client_fd = guests.find(client.getFd());
+		if (client_fd == guests.end())
 		{
 			sendSystemMsg(client, "473", channel.getName() + ERR_INVITEONLYCHAN);
 			return false;
