@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/15 17:37:49 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/15 17:44:10 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -989,6 +989,7 @@ void Server::handlePRIVMSG(Client& client, const std::string& param)
 	{
 		if (param[i] == ',')
 		{
+			++i;
 			if (!remainingComma(param, i))
 			{
 				for (; i < param.size() && param[i] == ' '; ++i); // skip all spaces
