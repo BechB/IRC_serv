@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/15 11:07:40 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/15 17:18:22 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,6 +112,7 @@ class Server
 		void	handleUSER(Client& client, const std::string& name);
 		void	handleJOIN(Client& client, const std::string& param);
 		void	handleKICK(const Client& client, const std::string& param);
+		void	handlePRIVMSG(Client& client, const std::string& param);
 		void	handleTOPIC(const Client& client, const std::string& param);
 		void	handleINVITE(const Client& client, const std::string&param);
 		void	handleWHO(const Client& client, const std::string& param);

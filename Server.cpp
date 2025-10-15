@@ -6,24 +6,25 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/15 11:07:50 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/15 17:37:49 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "headers/Server.hpp"
 
-// static std::vector<std::string> isolateParameters(const std::string& param)
-// {
-// 	std::vector<std::string> params;
-// 	std::istringstream iss(param);
-// 	std::string word;
-	
-// 	while(iss >> word)
-// 		params.push_back(word);
-	
-// 	return params; 
-// }
+// used in handlePRIVMSG()
+static bool remainingComma(const std::string& param, size_t currIdx)
+{
+	for (; currIdx < param.size(); ++currIdx)
+	{
+		if (param[currIdx] == ',')
+			return true;
+	}
 
+	return false;
+}
+
+// used in createChannel()
 static bool parseJoinParams(const std::string& params)
 {
 	std::string channelName = params;
@@ -485,6 +486,12 @@ void Server::checkCommand(Client& client)
 		handleKICK(client, parameter);
 		return;
 	}
+
+	if (command == "PRIVMSG")
+	{
+		handlePRIVMSG(client, parameter);
+		return;
+	}
 	// autres if command..
 	
 	sendSystemMsg(client, "421", command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
@@ -496,16 +503,12 @@ void Server::handleKICK(const Client& client, const std::string& param)
 	const std::string& channelName = params[0];
 	const std::string& targetName = params[1];
 	// comment are all params after params[1], splited by space
-	std::cout << "param: " << param << std::endl;
-	std::cout << "channel name: " << channelName << std::endl;
-	std::cout << "target name: " << targetName << std::endl;
 
 	if (params.size() < 2 || channelName.empty() || targetName.empty())
 	{
 		sendSystemMsg(client, "461", "KICK" ERR_NEEDMOREPARAMS);
 		return;
 	}
-	
 	if (channelName[0] != '#')
 	{
 		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
@@ -521,7 +524,7 @@ void Server::handleKICK(const Client& client, const std::string& param)
 			sendSystemMsg(client, "401", targetName + ERR_NOSUCHNICK);
 			return;
 		}
-
+		
 		Channel& channel = itChan->second;
 		Client& target = itClient ->second;
 		int targetFd = target.getFd();
@@ -533,7 +536,7 @@ void Server::handleKICK(const Client& client, const std::string& param)
 			sendSystemMsg(client, "442", channelName + ERR_NOTONCHANNEL);
 			return;
 		}
-
+		
 		if (!channel.isOperator(clientFd))
 		{
 			sendSystemMsg(client, "482", channelName + ERR_CHANOPRIVSNEEDED);
@@ -546,7 +549,6 @@ void Server::handleKICK(const Client& client, const std::string& param)
 			return;
 		}
 		
-		
 		if (params.size() > 2)
 		{
 			for (size_t i = 2; i < params.size() ;++i)
@@ -556,13 +558,11 @@ void Server::handleKICK(const Client& client, const std::string& param)
 					comment += " ";			
 			}
 		}
-		
 		if (comment == "")
 			comment = "Kicked";
 
-		const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " KICK " + channelName + " " + targetName + " :"+ comment + "\r\n";
+		const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " KICK " + channelName + " " + targetName + " "+ comment + "\r\n";
 		channel.broadcast(reply);
-
 		if (channel.isOperator(targetFd))
 			channel.removeOperator(targetFd);
 
@@ -975,6 +975,53 @@ bool Server::isNickExist(const std::string& nickname)
 	return false;
 }
 
+
+void Server::handlePRIVMSG(Client& client, const std::string& param)
+{
+	(void)client;
+	std::cout << "PARAM: " << param << std::endl;
+	
+	std::vector<std::string> targets;
+	std::string target = "";
+	std::string msg = "";
+	
+	for (size_t i = 0; i < param.size(); ++i)
+	{
+		if (param[i] == ',')
+		{
+			if (!remainingComma(param, i))
+			{
+				for (; i < param.size() && param[i] == ' '; ++i); // skip all spaces
+				
+				for (; i < param.size() && param[i] != ' '; ++i)
+					target.push_back(param[i]);
+					
+				for (; i < param.size() && param[i] == ' '; ++i);
+				
+				for (; i < param.size(); ++i)
+					msg.push_back(param[i]);
+				
+				break;
+			}
+			
+			targets.push_back(target);
+			target = "";
+		}
+		
+		target.push_back(param[i]);
+	}
+
+	for  (size_t i = 0; i < targets.size(); ++i)
+	{
+		std::cout<< targets[i] << std::endl;
+	}
+	// for each target, send this message
+	// const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " PRIVNSG " + target + " :" + msg + "\r\n";
+	
+}
+
+
+
 void Server::handleJOIN(Client& client, const std::string& param)
 {
 	if (!client.getIsRegistred())
@@ -1004,11 +1051,15 @@ void Server::handleJOIN(Client& client, const std::string& param)
 		createChannel(channelName, client); // client will be added in the channel's ctor (in _members & _operators)
 	else
 	{
+		if (itChannel->second.isMember(client.getFd()))
+			return;
+
 		if (!checkChannelPermissions(client, itChannel->second))
 			return;
 
 		itChannel->second.addMember(client.getFd());
 	}
+	
 	
 	client.joinChannel(channelName);
 
