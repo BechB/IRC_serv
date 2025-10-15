@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/14 17:27:26 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/15 11:07:50 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,7 +102,6 @@ Server::Server(int argc, char **argv)
 	perror("");
 	listen(_sockfd, 15); //limiter le nombre de client qui peuvent se connecter (ici : 15)
 						//permet d ecouter
-    initSystemMsgs();
 }
 
 Server::~Server() 
@@ -338,21 +337,6 @@ int	Server::check_password(int client_fd, std::string buffer)
 		return 1;
 }
 
-
-void Server::initSystemMsgs()
-{
-	_passGranted = "Password accepted. Please choose a nickname with NICK <name>\n";
-	_passDenied = "Wrong password. Try again\n";
-	_passCmdInfo = "Please enter password with PASS <password>\n";
-	
-	_nickGranted = "Nickname accepted. Please enter username with USER <name>\n";
-	_nickCmdInfo = "Please choose a nickname with NICK <nickname>\n";
-	
-	_userGranted = "Username accepted.\n";
-	_userCmdInfo = "Please set your username with USER <username>\n";
-}
-
-
 void Server::handlePASS(Client& client, const std::string& pass)
 {
 	if (client.getIsRegistred())
@@ -445,8 +429,8 @@ void Server::handleUSER(Client& client, const std::string& name)
 
 void Server::checkCommand(Client& client)
 {
-	std::string command = _cmd.first;
-	std::string parameter = _cmd.second;
+	std::string& command = _cmd.first;
+	std::string& parameter = _cmd.second;
 
 	if (command == "PASS")
 	{
@@ -511,9 +495,12 @@ void Server::handleKICK(const Client& client, const std::string& param)
 	const std::vector<std::string>& params = divideParams(param);
 	const std::string& channelName = params[0];
 	const std::string& targetName = params[1];
-	const std::string& comment = params[2];
+	// comment are all params after params[1], splited by space
+	std::cout << "param: " << param << std::endl;
+	std::cout << "channel name: " << channelName << std::endl;
+	std::cout << "target name: " << targetName << std::endl;
 
-	if (params.size() != 3 || channelName.empty() || targetName.empty())
+	if (params.size() < 2 || channelName.empty() || targetName.empty())
 	{
 		sendSystemMsg(client, "461", "KICK" ERR_NEEDMOREPARAMS);
 		return;
@@ -525,13 +512,65 @@ void Server::handleKICK(const Client& client, const std::string& param)
         return;
 	}
 
-	if (!isNickExist(targetName))
+	std::map<std::string, Channel>::iterator itChan = findChannel(channelName);
+	if (itChan != _channels.end())
 	{
-		sendSystemMsg(client, "442", targetName + ERR_NOTONCHANNEL);
-		return;
+		std::map<int, Client>::iterator itClient = findClientByNick(targetName);
+		if (itClient == _clients.end())
+		{
+			sendSystemMsg(client, "401", targetName + ERR_NOSUCHNICK);
+			return;
+		}
+
+		Channel& channel = itChan->second;
+		Client& target = itClient ->second;
+		int targetFd = target.getFd();
+		int clientFd = client.getFd();
+		std::string comment = "";
+
+		if (!channel.isMember(clientFd))
+		{
+			sendSystemMsg(client, "442", channelName + ERR_NOTONCHANNEL);
+			return;
+		}
+
+		if (!channel.isOperator(clientFd))
+		{
+			sendSystemMsg(client, "482", channelName + ERR_CHANOPRIVSNEEDED);
+			return;
+		}
+		
+		if (!channel.isMember(targetFd))
+		{
+			sendSystemMsg(client, "441", targetName + " " + channelName + ERR_USERNOTINCHANNEL);
+			return;
+		}
+		
+		
+		if (params.size() > 2)
+		{
+			for (size_t i = 2; i < params.size() ;++i)
+			{
+				comment += params[i];
+				if (i != params.size() - 1)
+					comment += " ";			
+			}
+		}
+		
+		if (comment == "")
+			comment = "Kicked";
+
+		const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " KICK " + channelName + " " + targetName + " :"+ comment + "\r\n";
+		channel.broadcast(reply);
+
+		if (channel.isOperator(targetFd))
+			channel.removeOperator(targetFd);
+
+		channel.removeMember(targetFd);
+		target.leaveChannel(channelName);
 	}
-	
-	if () // todo
+	else
+		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
 }
 
 std::map<std::string, Channel>::iterator Server::findChannel(const std::string& channelName)
@@ -587,7 +626,7 @@ void Server::handleINVITE(const Client& client, const std::string& param)
 			sendSystemMsg(client, "442", targetChannel + ERR_NOTONCHANNEL);
 			return;
 		}
-		
+
 		if (channel.getInvitOnly() && !channel.isOperator(client.getFd()))
 		{
 			sendSystemMsg(client, "482", targetChannel + ERR_CHANOPRIVSNEEDED);
@@ -728,9 +767,9 @@ void Server::iMode(const Client& client, Channel& channel, const std::vector<std
 	channel.broadcast(reply);
 }
 
-std::map<int, Client>::const_iterator Server::findClientByNick(const std::string& nickname) const
+std::map<int, Client>::iterator Server::findClientByNick(const std::string& nickname)
 {
-	std::map<int, Client>::const_iterator it_client = _clients.begin();
+	std::map<int, Client>::iterator it_client = _clients.begin();
 
 	for(; it_client != _clients.end(); ++it_client)
 	{

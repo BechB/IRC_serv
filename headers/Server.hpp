@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/14 17:01:56 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/15 11:07:40 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,37 +36,30 @@
 #include "Channel.hpp"
 #include "utils.hpp"
 
-#define CMD_INFO_PASS "Please enter password with PASS <password>"
-#define CMD_INFO_NICK "Please choose a nickname with NICK <nickname>"
-#define CMD_INFO_USER "Please set your username with USER <username>"
-#define PASS_DENIED "Wrong password. Try again"
-#define PASS_GRANTED "Password accepted. Please choose a nickname with NICK <name>"
-#define NICK_GRANTED "Nickname accepted. Please enter username with USER <name>"
-
 // miscelaneous
-#define ERR_NEEDMOREPARAMS " :Not enough parameters" // 461
-#define ERR_UNKNOWNCOMMAND " :Unknown command" // 421
+#define ERR_NEEDMOREPARAMS " :Not enough parameters" 			// 461
+#define ERR_UNKNOWNCOMMAND " :Unknown command" 					// 421
 
 // profile / authenticate
-#define ERR_NONICKNAMEGIVEN ":No nickname given" // 431
-#define ERR_ERRONEUSNICKNAME ":Erroneus nickname" // 432
-#define ERR_NICKNAMEINUSE ":Nickname is already in use" //433
-#define ERR_NOTREGISTERED ":You have not registered" // 451
-#define ERR_ALREADYREGISTRED ":You may not reregister" // 462
-#define ERR_PASSWDMISMATCH ":Password incorrect" // 464
+#define ERR_NONICKNAMEGIVEN ":No nickname given" 				// 431
+#define ERR_ERRONEUSNICKNAME ":Erroneus nickname" 				// 432
+#define ERR_NICKNAMEINUSE ":Nickname is already in use" 		// 433
+#define ERR_NOTREGISTERED ":You have not registered" 			// 451
+#define ERR_ALREADYREGISTRED ":You may not reregister" 			// 462
+#define ERR_PASSWDMISMATCH ":Password incorrect" 				// 464
 
 // channel
-#define ERR_NOSUCHNICK " :No such nick/channel" // 401
-#define ERR_NOSUCHCHANNEL " :No such channel" // 403
-#define ERR_USERNOTINCHANNEL ":They aren't on that channel" // 441
-#define ERR_NOTONCHANNEL " :You're not on that channel" // 442
-#define ERR_USERONCHANNEL " :is already on channel" // 443
-#define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" // 471
-#define ERR_INVITEONLYCHAN " :Cannot join channel (+i)" // 473
-#define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" // 475
-#define ERR_CHANOPRIVSNEEDED " :You're not channel operator" // 482 
+#define ERR_NOSUCHNICK " :No such nick/channel" 				// 401 <nick> :
+#define ERR_NOSUCHCHANNEL " :No such channel" 					// 403 <canal> :
+#define ERR_USERNOTINCHANNEL ":They aren't on that channel" 	// 441 <nick> <canal> :
+#define ERR_NOTONCHANNEL " :You're not on that channel" 		// 442 <canal> :
+#define ERR_USERONCHANNEL " :is already on channel" 			// 443 <nick> <canal> :
+#define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" 		// 471 <canal> :
+#define ERR_INVITEONLYCHAN " :Cannot join channel (+i)" 		// 473 <canal> :
+#define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" 		// 475 <canal> :
+#define ERR_CHANOPRIVSNEEDED " :You're not channel operator" 	// 482 <canal> : 
 // mode
-#define ERR_UNKNOWNMODE " :is unknown mode char to me" // 472
+#define ERR_UNKNOWNMODE " :is unknown mode char to me" 			// 472
 
 
 class Client;
@@ -130,7 +123,7 @@ class Server
 		void	lMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
 
 		// client
-		std::map<int, Client>::const_iterator findClientByNick(const std::string& nickname) const;
+		std::map<int, Client>::iterator findClientByNick(const std::string& nickname);
 
 		// channels
 		void	createChannel(const std::string& channelName, const Client& currentClient);
