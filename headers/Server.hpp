@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/15 17:18:22 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/16 14:49:50 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,11 +117,11 @@ class Server
 		void	handleINVITE(const Client& client, const std::string&param);
 		void	handleWHO(const Client& client, const std::string& param);
 		void 	handleMODE(const Client& client, const std::string& param);
-		void	kMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
+		void	kMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter);
 		void	tMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
-		void	iMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
-		void	oMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
-		void	lMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
+		void	iMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter);
+		void	oMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter);
+		void	lMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter);
 
 		// client
 		std::map<int, Client>::iterator findClientByNick(const std::string& nickname);

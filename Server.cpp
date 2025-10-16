@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/15 17:44:10 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/16 14:54:23 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -728,19 +728,21 @@ void Server::handleMODE(const Client& client, const std::string& param)
 		return;
 	}
 
+	std::cout << "modes: " << modes << std::endl;
+	size_t counter = 0; // if +okl <nick> <pass> <limit>, will associate o to nick (then counter++), k to pass (counter++) and l to limit
 	// i = 1 -> skip the '+' / '-'
 	for (size_t i = 1; i < modes.size(); ++i)
 	{
 		if (modes[i] == 'k')
-			kMode(client, channel, params);
+			kMode(client, channel, params, counter);
 		else if (modes[i] == 't')
 			tMode(client, channel, params);
 		else if (modes[i] == 'i')
-			iMode(client, channel, params);
+			iMode(client, channel, params, counter);
 		else if (modes[i] == 'o')
-			oMode(client, channel, params);
+			oMode(client, channel, params, counter);
 		else if (modes[i] == 'l')
-			lMode(client, channel, params);
+			lMode(client, channel, params, counter);
 		else
 		{
 			sendSystemMsg(client, "472", std::string(1, modes[i]) + ERR_UNKNOWNMODE);
@@ -749,8 +751,9 @@ void Server::handleMODE(const Client& client, const std::string& param)
 	}
 }
 
-void Server::iMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
+void Server::iMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter)
 {
+	(void)counter;
 	if (params.size() > 2)
 	{
 		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
@@ -779,10 +782,14 @@ std::map<int, Client>::iterator Server::findClientByNick(const std::string& nick
 	return it_client;
 }
 
-void Server::oMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
+void Server::oMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter)
 {
-	
-	if (params[1][0] != '#' || params.size() < 2 || params[2].empty())
+	// params 0 = channel
+	// params 1 = option
+	// params 2 = target
+	(void)counter;
+	std::cout << "params2: " << params[2] << std::endl;
+	if (params[0][0] != '#' || params.size() != 3 || params[2].empty())
 	{
 		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
 		return;
@@ -823,8 +830,9 @@ void Server::oMode(const Client& client, Channel& channel, const std::vector<std
 	channel.broadcast(reply);
 }
 
-void Server::lMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
+void Server::lMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter)
 {
+	(void)counter;
 	const std::string& limit = params[2];
 
 	if (params[1][0] == '-')
@@ -843,7 +851,7 @@ void Server::lMode(const Client& client, Channel& channel, const std::vector<std
 		return;
 	}
 	
-		
+
 	if (!isOnlyDigit(limit) || limit == "0" || limit[0] == '-' || limit.size() > 3)
 	{
 		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
@@ -874,11 +882,12 @@ void Server::tMode(const Client& client, Channel& channel, const std::vector<std
 	channel.broadcast(reply);
 }
 
-void Server::kMode(const Client& client, Channel& channel, const std::vector<std::string>& params)
+void Server::kMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter)
 {
 	// params 0 = channel name
 	// params 1 = +|- modes
 	// params 2 = key 
+	(void)counter;
 	if (params[1][0] == '-')
 	{
 		channel.setKey("");
@@ -976,6 +985,22 @@ bool Server::isNickExist(const std::string& nickname)
 }
 
 
+static void skipSpaces(const std::string& str, size_t& currIdx)
+{
+	while ((currIdx < str.size()) && (str[currIdx] == ' '))
+		++currIdx;
+}
+
+// static size_t countWords(const std::string& str)
+// {
+// 	size_t count = 0;
+	
+// 	for (size_t i = 0; i < str.size(); ++i)	
+
+// 	return count;
+// }
+
+ 
 void Server::handlePRIVMSG(Client& client, const std::string& param)
 {
 	(void)client;
@@ -983,44 +1008,109 @@ void Server::handlePRIVMSG(Client& client, const std::string& param)
 	
 	std::vector<std::string> targets;
 	std::string target = "";
-	std::string msg = "";
+	std::string comment = "";
 	
+	// for (size_t i = 0; i < param.size(); ++i)
+	// {
+	// 	skipSpaces(param, i);
+		
+	// 	if (i >= param.size())
+	// 		break;
+
+	// 	if (param[i] == ',')
+	// 	{
+	// 		++i;
+	// 		if (!remainingComma(param, i))
+	// 		{
+	// 			skipSpaces(param, i);
+				
+	// 			// get last target 
+	// 			for (; i < param.size() && param[i] != ' '; ++i)
+	// 				target.push_back(param[i]);
+				
+	// 			targets.push_back(target);
+	// 			target.clear();
+				
+	// 			skipSpaces(param, i);
+
+	// 			// get comment, space allowed for sentence
+	// 			for (; i < param.size(); ++i)
+	// 				comment.push_back(param[i]);
+				
+	// 			break;
+	// 		}
+			
+	// 		target.push_back(param[i]);
+	// 	}
+	// }
 	for (size_t i = 0; i < param.size(); ++i)
 	{
+		skipSpaces(param, i);
+		
+		if (i >= param.size())
+			break;
+
 		if (param[i] == ',')
 		{
-			++i;
-			if (!remainingComma(param, i))
+			if (i + 1 < param.size() && param[i + 1] == ',')
 			{
-				for (; i < param.size() && param[i] == ' '; ++i); // skip all spaces
+				if (!target.empty())
+				{
+					targets.push_back(target);
+					target.clear();
+				}
+				else
+				{
+					targets.push_back("");
+					target.clear();
+				}
+				++i;
+				continue;
+			}
+			++i;
+
+			if (!remainingComma(param, i))
+			{			
+				targets.push_back(target);
+				target.clear();
 				
+				skipSpaces(param, i);
+				
+				// the last target
 				for (; i < param.size() && param[i] != ' '; ++i)
 					target.push_back(param[i]);
+
+				targets.push_back(target);
 					
-				for (; i < param.size() && param[i] == ' '; ++i);
-				
+				skipSpaces(param, i);
+
+				// the comment after the last target
 				for (; i < param.size(); ++i)
-					msg.push_back(param[i]);
-				
+					comment.push_back(param[i]);
+
 				break;
 			}
 			
+			if (i < 1 && (param[i - 1] != ' ') && (param[i - 1] != ','))
+				target.push_back(param[i - 1]);			
 			targets.push_back(target);
-			target = "";
+			target.clear();
+			continue;
 		}
 		
 		target.push_back(param[i]);
 	}
 
+	std::cout << "size attendue 5: " << targets.size() << std::endl; 
 	for  (size_t i = 0; i < targets.size(); ++i)
 	{
-		std::cout<< targets[i] << std::endl;
+		std::cout<< "target [" << targets[i] << "]" << std::endl;
 	}
+	std::cout << "comment: [" << comment << "]" << std::endl;
 	// for each target, send this message
 	// const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " PRIVNSG " + target + " :" + msg + "\r\n";
 	
 }
-
 
 
 void Server::handleJOIN(Client& client, const std::string& param)
