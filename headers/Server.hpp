@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/16 14:49:50 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/17 17:46:51 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,17 +41,20 @@
 #define ERR_UNKNOWNCOMMAND " :Unknown command" 					// 421
 
 // profile / authenticate
-#define ERR_NONICKNAMEGIVEN ":No nickname given" 				// 431
-#define ERR_ERRONEUSNICKNAME ":Erroneus nickname" 				// 432
-#define ERR_NICKNAMEINUSE ":Nickname is already in use" 		// 433
-#define ERR_NOTREGISTERED ":You have not registered" 			// 451
-#define ERR_ALREADYREGISTRED ":You may not reregister" 			// 462
-#define ERR_PASSWDMISMATCH ":Password incorrect" 				// 464
+#define ERR_NONICKNAMEGIVEN " :No nickname given" 				// 431
+#define ERR_ERRONEUSNICKNAME " :Erroneus nickname" 				// 432
+#define ERR_NICKNAMEINUSE " :Nickname is already in use" 		// 433
+#define ERR_NOTREGISTERED " :You have not registered" 			// 451
+#define ERR_ALREADYREGISTRED " :You may not reregister" 		// 462
+#define ERR_PASSWDMISMATCH " :Password incorrect" 				// 464
 
 // channel
+#define ERR_NORECIPIENT " :No recipient given (PRIVMSG)"		// 411 :
+#define ERR_NOTEXTTOSEND " :No text to send"					// 412 :
 #define ERR_NOSUCHNICK " :No such nick/channel" 				// 401 <nick> :
 #define ERR_NOSUCHCHANNEL " :No such channel" 					// 403 <canal> :
-#define ERR_USERNOTINCHANNEL ":They aren't on that channel" 	// 441 <nick> <canal> :
+#define ERR_CANNOTSENDTOCHAN " :Cannot send to channel" 		// 404 <canal> :
+#define ERR_USERNOTINCHANNEL " :They aren't on that channel" 	// 441 <nick> <canal> :
 #define ERR_NOTONCHANNEL " :You're not on that channel" 		// 442 <canal> :
 #define ERR_USERONCHANNEL " :is already on channel" 			// 443 <nick> <canal> :
 #define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" 		// 471 <canal> :
@@ -101,7 +104,6 @@ class Server
 		int    	handle_password(char *password);
 		int    	handle_port(char *port);
 		int		check_password(int client_fd, std::string buffer);
-		void	initSystemMsgs();
 		bool	isNickExist(const std::string& nickname);
 
 		// COMMANDS

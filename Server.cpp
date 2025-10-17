@@ -6,25 +6,13 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/16 14:54:23 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/17 18:39:47 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "headers/Server.hpp"
 
-// used in handlePRIVMSG()
-static bool remainingComma(const std::string& param, size_t currIdx)
-{
-	for (; currIdx < param.size(); ++currIdx)
-	{
-		if (param[currIdx] == ',')
-			return true;
-	}
-
-	return false;
-}
-
-// used in createChannel()
+// in createChannel()
 static bool parseJoinParams(const std::string& params)
 {
 	std::string channelName = params;
@@ -43,17 +31,53 @@ static bool parseJoinParams(const std::string& params)
 	return true;
 }
 
+// used in the commands logic
 static std::vector<std::string> divideParams(const std::string& param)
 {
 	std::vector<std::string> params;
 	std::istringstream ss(param);
 	std::string word;
+	std::string	lastParam;
 	
 	while (ss >> word)
+	{
+		if (word[0] == ':' && word.size() > 1)
+		{
+			word.erase(0, 1);
+			params.push_back(":");
+			std::getline(ss, lastParam);
+			word += lastParam;
+			params.push_back(word);
+			break;
+		}
+		
 		params.push_back(word);
+		
+		if (word == ":")
+		{
+			std::getline(ss, lastParam);
+			params.push_back(lastParam);	
+			break;
+		}
+	}
 
 	return params;
 }
+
+// in handlePRIVMSG()
+static bool findColon(std::string& msg)
+{
+	size_t i = 0;
+	
+	for (; i < msg.size() && msg[i] == ' '; ++i);
+
+	if (msg[i] != ':')
+		return false;
+	
+	msg.erase(0, i + 1); // erase all start spaces + the : found
+	return true;
+}
+
 
 
 Server::Server(int argc, char **argv)
@@ -290,30 +314,33 @@ int Server::Routine()
 				{
 					std::string message(buffer);
 					
-					std::cout << "[" << message.find("\n") << "]" << std::endl;
+					// recup les commandes envoyees auto par hexchat 
 					for (size_t i = 0; i < message.size(); ++i)
 					{
 						if (message[i] == '\r')
 						message[i] = '\n';
 					}
 					message = message.substr(0, message.find('\n'));
-					extractCmd(message);
 					
+					extractCmd(message);
 					const bool wasRegister = client.getIsRegistred();
 					checkCommand(client);
 					const bool isNowRegister = client.getHasPass() && client.getHasNick() && client.getHasUser();
 					if (!wasRegister && isNowRegister)
 					{
 						client.setRegistred();
-						std::string welcomeMsg = client.getNickname() + " :Welcome to IRC server, " + client.getNickname() + "!";
+						std::string welcomeMsg = " :Welcome to IRC server, " + client.getNickname() + "!";
 						sendSystemMsg(client, "001", welcomeMsg);
 					}
 					if (!wasRegister && !isNowRegister)
 					{
 						const std::string& command = _cmd.first;
 						
-						if (command != "PASS" && command != "USER" && command != "NICK")
-							sendSystemMsg(client, "451", ERR_NOTREGISTERED);
+						if (command != "PASS" && command != "USER" && command != "NICK" && message != "CAP LS 302")
+						{
+							std::string reply = ":" + _name + " " + "451" + ERR_NOTREGISTERED + "\r\n";
+							send(client.getFd(), reply.c_str(), reply.size(), 0);
+						}
 					}
 					
 					// std::string message(buffer);
@@ -431,6 +458,10 @@ void Server::handleUSER(Client& client, const std::string& name)
 void Server::checkCommand(Client& client)
 {
 	std::string& command = _cmd.first;
+	
+	if (command == "CAP")
+		return;
+
 	std::string& parameter = _cmd.second;
 
 	if (command == "PASS")
@@ -450,7 +481,7 @@ void Server::checkCommand(Client& client)
 		handleNICK(client, parameter);
 		return;
 	}
-
+	
 	if (command == "JOIN")
 	{
 		handleJOIN(client, parameter);
@@ -493,7 +524,7 @@ void Server::checkCommand(Client& client)
 		return;
 	}
 	// autres if command..
-	
+
 	sendSystemMsg(client, "421", command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
 }
 
@@ -521,7 +552,7 @@ void Server::handleKICK(const Client& client, const std::string& param)
 		std::map<int, Client>::iterator itClient = findClientByNick(targetName);
 		if (itClient == _clients.end())
 		{
-			sendSystemMsg(client, "401", targetName + ERR_NOSUCHNICK);
+			sendSystemMsg(client, "401", " " + targetName + ERR_NOSUCHNICK);
 			return;
 		}
 		
@@ -900,7 +931,6 @@ void Server::kMode(const Client& client, Channel& channel, const std::vector<std
 	if (params.size() <= 2 || params[2].empty())
 	{
 		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
-		
 		return;
 	}
 	channel.setKey(params[2]);
@@ -910,56 +940,57 @@ void Server::kMode(const Client& client, Channel& channel, const std::vector<std
 
 void Server::handleTOPIC(const Client& client, const std::string& param)
 {
-	std::istringstream iss(param);
-	std::string channelName;
-
-	iss >> channelName; // consume first param
-
+	const std::vector<std::string>& params = divideParams(param);
+	const std::string& channelName = params[0];
+	
+	std::map<std::string, Channel>::iterator itChannel = findChannel(channelName);
+	
 	if (channelName.empty() || channelName[0] != '#')
 	{
 		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
-
-	std::map<std::string, Channel>::iterator it_channel = _channels.find(channelName);
-	if (it_channel == _channels.end())
+	
+	if (itChannel == _channels.end())
 	{
 		sendSystemMsg(client, "442", channelName + ERR_NOTONCHANNEL);
 		return;
 	}
 	
-	Channel& channel = it_channel->second;
-	if (channel.getTopicRestriction())
-	{
-		const std::set<int>& operators = channel.getOperators();
-		std::set<int>::iterator it_ope = operators.find(client.getFd());
-		if(it_ope == operators.end())
-		{
-			sendSystemMsg(client, "482", channel.getName() + " " + ERR_CHANOPRIVSNEEDED);
-			return;
-		}
-	}
-	std::string newTopic;
-	std::getline(iss, newTopic); // get all the word until the end of params, start by #chanName and save in newTopic
-
-	//  if only spaces
-	size_t start = newTopic.find_first_not_of(' ');
-	size_t end = newTopic.find_last_not_of(' ');
-	if (start == std::string::npos)
+	Channel& channel = itChannel->second;
+	
+	if (params.size() < 2)
 	{
 		if (channel.getTopic().empty())
 			RPL_NOTOPIC(client, channel);
 		else
 			RPL_TOPIC(client, channel);
-		
+
 		return;
 	}
-	newTopic = newTopic.substr(start, end - start + 1);
-	channel.setTopic(newTopic);
 
-	// recup list fd du channel
+	
+	if (channel.getTopicRestriction() && !channel.isOperator(client.getFd()))
+	{
+		sendSystemMsg(client, "482", channel.getName() + " " + ERR_CHANOPRIVSNEEDED);
+		return;
+	}
+	
+	std::string topic;
+	for (size_t i = 1; i < params.size(); ++i)
+		topic += params[i];
+	
+	if (params.size() < 3 || !findColon(topic))
+	{
+		sendSystemMsg(client, "461", " TOPIC" ERR_NEEDMOREPARAMS);
+		return;
+	}
+
+	channel.setTopic(topic);
+
 	const std::set<int>& members = channel.getMembers();
 	std::set<int>::iterator it_member = members.begin();
+	
 	// envoyer RPL apres changement de topic a tous les clients du channel
 	for (; it_member != members.end(); ++it_member)
 	{		
@@ -985,131 +1016,61 @@ bool Server::isNickExist(const std::string& nickname)
 }
 
 
-static void skipSpaces(const std::string& str, size_t& currIdx)
-{
-	while ((currIdx < str.size()) && (str[currIdx] == ' '))
-		++currIdx;
-}
-
-// static size_t countWords(const std::string& str)
-// {
-// 	size_t count = 0;
-	
-// 	for (size_t i = 0; i < str.size(); ++i)	
-
-// 	return count;
-// }
-
- 
 void Server::handlePRIVMSG(Client& client, const std::string& param)
 {
-	(void)client;
-	std::cout << "PARAM: " << param << std::endl;
-	
-	std::vector<std::string> targets;
-	std::string target = "";
-	std::string comment = "";
-	
-	// for (size_t i = 0; i < param.size(); ++i)
-	// {
-	// 	skipSpaces(param, i);
-		
-	// 	if (i >= param.size())
-	// 		break;
-
-	// 	if (param[i] == ',')
-	// 	{
-	// 		++i;
-	// 		if (!remainingComma(param, i))
-	// 		{
-	// 			skipSpaces(param, i);
-				
-	// 			// get last target 
-	// 			for (; i < param.size() && param[i] != ' '; ++i)
-	// 				target.push_back(param[i]);
-				
-	// 			targets.push_back(target);
-	// 			target.clear();
-				
-	// 			skipSpaces(param, i);
-
-	// 			// get comment, space allowed for sentence
-	// 			for (; i < param.size(); ++i)
-	// 				comment.push_back(param[i]);
-				
-	// 			break;
-	// 		}
-			
-	// 		target.push_back(param[i]);
-	// 	}
-	// }
-	for (size_t i = 0; i < param.size(); ++i)
+	if (param.empty())
 	{
-		skipSpaces(param, i);
-		
-		if (i >= param.size())
-			break;
+		sendSystemMsg(client, "411", ERR_NORECIPIENT);
+		return;
+	}
+	
+	bool isClient = false;
+	bool isChannel = false;
 
-		if (param[i] == ',')
+	std::map<int, Client>::iterator itClient;
+	std::map<std::string, Channel>::iterator itChannel;
+	const std::vector<std::string>& params = divideParams(param);
+	const std::string& target = params[0];
+	
+	if (!target.empty() && target[0] == '#')
+	{
+		itChannel = findChannel(target);
+		if (itChannel == _channels.end())
 		{
-			if (i + 1 < param.size() && param[i + 1] == ',')
-			{
-				if (!target.empty())
-				{
-					targets.push_back(target);
-					target.clear();
-				}
-				else
-				{
-					targets.push_back("");
-					target.clear();
-				}
-				++i;
-				continue;
-			}
-			++i;
-
-			if (!remainingComma(param, i))
-			{			
-				targets.push_back(target);
-				target.clear();
-				
-				skipSpaces(param, i);
-				
-				// the last target
-				for (; i < param.size() && param[i] != ' '; ++i)
-					target.push_back(param[i]);
-
-				targets.push_back(target);
-					
-				skipSpaces(param, i);
-
-				// the comment after the last target
-				for (; i < param.size(); ++i)
-					comment.push_back(param[i]);
-
-				break;
-			}
-			
-			if (i < 1 && (param[i - 1] != ' ') && (param[i - 1] != ','))
-				target.push_back(param[i - 1]);			
-			targets.push_back(target);
-			target.clear();
-			continue;
+			sendSystemMsg(client, "404", target + ERR_CANNOTSENDTOCHAN);
+			return;
 		}
 		
-		target.push_back(param[i]);
+		isChannel = true;
 	}
-
-	std::cout << "size attendue 5: " << targets.size() << std::endl; 
-	for  (size_t i = 0; i < targets.size(); ++i)
+	else
 	{
-		std::cout<< "target [" << targets[i] << "]" << std::endl;
+		itClient = findClientByNick(target);
+		if (itClient == _clients.end())
+		{
+			sendSystemMsg(client, "401", target + ERR_NOSUCHNICK);
+			return;
+		}
+		
+		isClient = true;
 	}
-	std::cout << "comment: [" << comment << "]" << std::endl;
-	// for each target, send this message
-	// const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " PRIVNSG " + target + " :" + msg + "\r\n";
 	
+	std::string msg;
+	for (size_t i = 1; i < params.size(); ++i)
+		msg += params[i];
+
+	if (params.size() < 3 || !findColon(msg))
+	{
+		sendSystemMsg(client, "412", ERR_NOTEXTTOSEND);
+		return;
+	}
+	
+	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " PRIVMSG " + target + " :" + msg + "\r\n";
+	if (isChannel)
+		itChannel->second.broadcast(reply, client.getFd()); // broadcast(reply, exceptId) <- prevent to send to myself the reply
+
+	else if (isClient)
+		send(itClient->first, reply.c_str(), reply.size(), 0);
 }
 
 
@@ -1121,8 +1082,11 @@ void Server::handleJOIN(Client& client, const std::string& param)
 		return;
 	}
 	
-	const std::vector<std::string>& params = divideParams(param);	
-	const std::string& channelName = params[0];
+	// const std::vector<std::string>& params = divideParams(param);
+	
+	// for (size_t i = 0; i < params.size(); ++i)
+		
+	const std::string& channelName = param;	
 	if (channelName.find_first_of('#', 0) == std::string::npos)
 	{
 		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
@@ -1150,7 +1114,6 @@ void Server::handleJOIN(Client& client, const std::string& param)
 
 		itChannel->second.addMember(client.getFd());
 	}
-	
 	
 	client.joinChannel(channelName);
 
@@ -1236,13 +1199,13 @@ void Server::extractCmd(const std::string& message)
 
 void Server::sendSystemMsg(const Client& client, const std::string& code, const std::string& errmsg) const
 {
-	std::string reply = ":" + _name + " " + code + " " + client.getNickname() + " " + errmsg + "\r\n";
+	std::string reply = ":" + _name + " " + code + " " + client.getNickname() + errmsg + "\r\n";
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
 
 void Server::RPL_TOPIC(const Client& client, const Channel& channel) const
 {
-	std::string reply = ":" + _name + " 332 " +  client.getNickname() + " " + channel.getName() + " " + channel.getTopic() + "\r\n";
+	std::string reply = ":" + _name + " 332 " +  client.getNickname() + " " + channel.getName() + " :" + channel.getTopic() + "\r\n";
 	
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
