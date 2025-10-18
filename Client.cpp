@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/23 16:34:55 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/05 18:16:26 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/18 16:31:57 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ bool                        Client::getHasUser() const {return _hasUser;}
 bool                        Client::getIsRegistred() const {return _registred;}
 std::string                 Client::getUsername() const {return _username;}
 std::string                 Client::getNickname() const {return _nickname;}
+std::string                 Client::getIncompleteMsg() const {return _incompleteMsg;}
 std::set<std::string>       Client::getChannels() const {return _channels;}
 std::string                 Client::getOldNickname() const {return _oldNickname;}
 
@@ -53,4 +54,5 @@ std::string                 Client::getOldNickname() const {return _oldNickname;
 void    Client::closeFd() {close(_fd);}
 void    Client::joinChannel(const std::string& name) {_channels.insert(name);}
 void    Client::leaveChannel(const std::string& name) {_channels.erase(name);}
-
+void    Client::updateIncompMsg(const std::string& msgPart) {_incompleteMsg += msgPart;}
+void    Client::clearIncompMsg() {_incompleteMsg.clear();}

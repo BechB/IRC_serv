@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:21:28 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/05 16:33:09 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/18 17:44:31 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ class Client
         std::string                 _username;
         std::string                 _nickname;
         std::string                 _oldNickname;
+        std::string					_incompleteMsg; // ctrl D
         std::set<std::string>       _channels;
 
     public:
@@ -39,8 +40,8 @@ class Client
         void    setHasNick();
         void    setHasUser();
         void    setRegistred();
-        void    setNickname(const std::string& nickname);
-        void    setUsername(const std::string& username);
+        void    setNickname(const std::string&);
+        void    setUsername(const std::string&);
 
         // getters
         int                         getFd() const;
@@ -51,10 +52,13 @@ class Client
         std::string                 getNickname() const;
         std::string                 getOldNickname() const;
         std::string                 getUsername() const;
+        std::string                 getIncompleteMsg() const;
         std::set<std::string>       getChannels() const;
 
         // members
         void    closeFd();
-        void    joinChannel(const std::string& name);
-        void    leaveChannel(const std::string& name);
+        void    joinChannel(const std::string&);
+        void    leaveChannel(const std::string&);
+        void    updateIncompMsg(const std::string&);
+        void    clearIncompMsg();
 };

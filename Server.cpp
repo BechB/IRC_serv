@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/17 18:39:47 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/18 19:54:39 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -271,7 +271,7 @@ int Server::Routine()
 		}
 		//vrifier les sockets des clients
 		std::map<int, Client>::iterator it = _clients.begin();
-		for (; it != _clients.end(); )
+		for (; it != _clients.end();)
 		{
 			int client_fd = it->first;
     		Client& client = it->second;
@@ -292,19 +292,38 @@ int Server::Routine()
 			if (FD_ISSET(client_fd, &read_fds)) 
 			{
 				//le client a envoye des donnees
-				
                 memset(buffer, '\0', 500);
 
                 int signal = recv(client_fd, buffer, sizeof(buffer), MSG_DONTWAIT);
                 std::cout << "BUFFER [" << buffer << "]" << std::endl;
 				std::cout << "signal: " << signal << std::endl;
+				std::string message(buffer);
+
+				//handle ctrl + d
+				if (message.find('\n') == std::string::npos)
+				{
+					client.updateIncompMsg(message);
+					continue;
+				}
+				else
+				{
+					message = client.getIncompleteMsg() + message;
+					client.clearIncompMsg();
+				}
+
 				if (signal <= 0)
 				{
+					std::string clientName = client.getNickname();
+					if (clientName.empty())
+						clientName = "a client without nickname/username";
+
 					if (signal < 0)
-						std::cout << "Signal error with "<< client.getNickname() << std::endl;
+						std::cout << "Signal error with " << clientName << std::endl;
 					else
-						std::cout << client.getNickname() << " are disconnected" << std::endl;
+						std::cout << clientName << " are disconnected" << std::endl;
 					
+					// bien virer le client de tous les channels. Donc boucler sur tous les channels dans client::_channels
+					// et Channell::removeClient(le client) 
 					client.closeFd();
 					FD_CLR(client_fd, &all_fds);
 					_clients.erase(it++);
@@ -312,9 +331,6 @@ int Server::Routine()
 				}
 				else
 				{
-					std::string message(buffer);
-					
-					// recup les commandes envoyees auto par hexchat 
 					for (size_t i = 0; i < message.size(); ++i)
 					{
 						if (message[i] == '\r')
@@ -326,19 +342,21 @@ int Server::Routine()
 					const bool wasRegister = client.getIsRegistred();
 					checkCommand(client);
 					const bool isNowRegister = client.getHasPass() && client.getHasNick() && client.getHasUser();
+					
 					if (!wasRegister && isNowRegister)
 					{
 						client.setRegistred();
 						std::string welcomeMsg = " :Welcome to IRC server, " + client.getNickname() + "!";
 						sendSystemMsg(client, "001", welcomeMsg);
 					}
+				
 					if (!wasRegister && !isNowRegister)
 					{
 						const std::string& command = _cmd.first;
 						
 						if (command != "PASS" && command != "USER" && command != "NICK" && message != "CAP LS 302")
 						{
-							std::string reply = ":" + _name + " " + "451" + ERR_NOTREGISTERED + "\r\n";
+							const std::string reply = ":" + _name + " " + "451" + ERR_NOTREGISTERED + "\r\n";
 							send(client.getFd(), reply.c_str(), reply.size(), 0);
 						}
 					}
@@ -525,7 +543,7 @@ void Server::checkCommand(Client& client)
 	}
 	// autres if command..
 
-	sendSystemMsg(client, "421", command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
+	sendSystemMsg(client, "421", " " + command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
 }
 
 void Server::handleKICK(const Client& client, const std::string& param)
@@ -764,6 +782,7 @@ void Server::handleMODE(const Client& client, const std::string& param)
 	// i = 1 -> skip the '+' / '-'
 	for (size_t i = 1; i < modes.size(); ++i)
 	{
+		std::cout << "mode actuel: " << modes[i] << std::endl;
 		if (modes[i] == 'k')
 			kMode(client, channel, params, counter);
 		else if (modes[i] == 't')
@@ -776,7 +795,7 @@ void Server::handleMODE(const Client& client, const std::string& param)
 			lMode(client, channel, params, counter);
 		else
 		{
-			sendSystemMsg(client, "472", std::string(1, modes[i]) + ERR_UNKNOWNMODE);
+			sendSystemMsg(client, "472", "TEST" ERR_UNKNOWNCOMMAND);
 			return;
 		}
 	}
@@ -819,7 +838,6 @@ void Server::oMode(const Client& client, Channel& channel, const std::vector<std
 	// params 1 = option
 	// params 2 = target
 	(void)counter;
-	std::cout << "params2: " << params[2] << std::endl;
 	if (params[0][0] != '#' || params.size() != 3 || params[2].empty())
 	{
 		sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
@@ -871,10 +889,9 @@ void Server::lMode(const Client& client, Channel& channel, const std::vector<std
 		if (params.size() > 2)
 		{
 			sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
-			
 			return;
 		}
-		
+
 		channel.removeLimit();
 		const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + " -l\r\n";
 		channel.broadcast(reply);
@@ -902,14 +919,23 @@ void Server::tMode(const Client& client, Channel& channel, const std::vector<std
         sendSystemMsg(client, "461", "MODE" ERR_NEEDMOREPARAMS);
         return;
     }
+	
+
+	// check if already +t in channel
+	bool isRestricted = channel.getTopicRestriction() ? true : false;
+	if (params[1][0] == '+')
+	{
+		if (isRestricted)
+			return;
+	}
 
 	if (params[1][0] == '-')
 		channel.removeTopicRestriction();
 	else
 		channel.enableTopicRestriction();
 	
-	bool trestric = channel.getTopicRestriction() ? true : false;
-	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + (trestric ? " +t\r\n" : " -t\r\n");
+	isRestricted = channel.getTopicRestriction() ? true : false;
+	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " MODE " + channel.getName() + (isRestricted ? " +t\r\n" : " -t\r\n");
 	channel.broadcast(reply);
 }
 

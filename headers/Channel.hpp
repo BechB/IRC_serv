@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/17 17:13:35 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/18 19:54:26 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,3 +71,5 @@ class Channel
         void            removeGuest(int client_fd);
         void            broadcast(const std::string& message, int except_fd = -1) const;
 };
+
+

@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/17 17:46:51 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/18 16:27:15 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,16 +79,6 @@ class Server
 		std::map<std::string, Channel>		_channels;
 		std::string							_name;
 		std::string 						_password;
-		
-		std::string 						_passGranted;
-		std::string 						_passDenied;
-		std::string 						_passCmdInfo;
-		
-		std::string 						_nickGranted;
-		std::string 						_nickCmdInfo;
-		
-		std::string 						_userGranted;
-		std::string 						_userCmdInfo;
 
 	public:
 		Server(int argc, char **argv);
