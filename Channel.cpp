@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/14 14:07:06 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/19 16:29:09 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,11 +96,11 @@ void Channel::removeGuest(int client_fd) {_guests.erase(client_fd);}
 
 void Channel::broadcast(const std::string& msg, int except_fd) const
 {
-    for (std::set<int>::const_iterator it = _members.begin(); it != _members.end(); ++it)
+    for (std::set<int>::iterator it = _members.begin(); it != _members.end(); ++it)
     {
         if (*it == except_fd)
             continue;
-        
+
         send(*it, msg.c_str(), msg.size(), 0);
     }
 }

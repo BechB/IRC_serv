@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/17 15:59:23 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/18 19:54:26 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/19 15:04:57 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,12 +31,12 @@ class Channel
         std::set<int>   _guests;
 
     public:
-        Channel(const std::string &name, int creator_fd);
+        Channel(const std::string &, int);
 
         // setters
-        void            setTopic(const std::string& newTopic);
-        void            setKey(const std::string& newKey);
-        void            setLimit(int limit);
+        void            setTopic(const std::string&);
+        void            setKey(const std::string&);
+        void            setLimit(int);
         void            setInvitOnly();
         
         // specialized setters
@@ -59,17 +59,15 @@ class Channel
         std::set<int>   getGuest() const;
 
         // members
-        bool            isOperator(int client_fd) const;
-        bool            isMember(int client_fd) const;
-        bool            isGuest(int client_fd) const;
-        bool            checkKey(const std::string& key) const;
-        void            addMember(int client_fd);
-        void            addOperator(int client_fd);
-        void            addGuest(int client_fd);
-        void            removeMember(int client_fd);
-        void            removeOperator(int client_fd);
-        void            removeGuest(int client_fd);
-        void            broadcast(const std::string& message, int except_fd = -1) const;
+        bool            isOperator(int) const;
+        bool            isMember(int) const;
+        bool            isGuest(int) const;
+        bool            checkKey(const std::string&) const;
+        void            addMember(int);
+        void            addOperator(int);
+        void            addGuest(int);
+        void            removeMember(int);
+        void            removeOperator(int);
+        void            removeGuest(int);
+        void            broadcast(const std::string& msg, int except_fd = -1) const;
 };
-
-

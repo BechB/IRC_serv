@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/18 16:27:15 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/19 15:37:15 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,10 +57,11 @@
 #define ERR_USERNOTINCHANNEL " :They aren't on that channel" 	// 441 <nick> <canal> :
 #define ERR_NOTONCHANNEL " :You're not on that channel" 		// 442 <canal> :
 #define ERR_USERONCHANNEL " :is already on channel" 			// 443 <nick> <canal> :
-#define ERR_CHANNELISFULL "JOIN :Cannot join channel (+l)" 		// 471 <canal> :
+#define ERR_CHANNELISFULL " :Cannot join channel (+l)" 		// 471 <canal> :
 #define ERR_INVITEONLYCHAN " :Cannot join channel (+i)" 		// 473 <canal> :
-#define ERR_BADCHANNELKEY "JOIN :Cannot join channel (+k)" 		// 475 <canal> :
+#define ERR_BADCHANNELKEY " :Cannot join channel (+k)" 		// 475 <canal> :
 #define ERR_CHANOPRIVSNEEDED " :You're not channel operator" 	// 482 <canal> : 
+
 // mode
 #define ERR_UNKNOWNMODE " :is unknown mode char to me" 			// 472
 
@@ -91,36 +92,36 @@ class Server
 		std::map<std::string, Channel>	getChannels() const;
 		
 		int 	Routine();
-		int    	handle_password(char *password);
-		int    	handle_port(char *port);
-		int		check_password(int client_fd, std::string buffer);
-		bool	isNickExist(const std::string& nickname);
+		int    	handle_password(char *);
+		int    	handle_port(char *);
+		int		check_password(int, std::string);
+		bool	isNickExist(const std::string&);
 
 		// COMMANDS
-		void 	checkCommand(Client& client);
-		void 	extractCmd(const std::string& message);
-		void	handlePASS(Client& client, const std::string& pass);
-		void	handleNICK(Client& client, const std::string& name);
-		void	handleUSER(Client& client, const std::string& name);
-		void	handleJOIN(Client& client, const std::string& param);
-		void	handleKICK(const Client& client, const std::string& param);
-		void	handlePRIVMSG(Client& client, const std::string& param);
-		void	handleTOPIC(const Client& client, const std::string& param);
-		void	handleINVITE(const Client& client, const std::string&param);
-		void	handleWHO(const Client& client, const std::string& param);
-		void 	handleMODE(const Client& client, const std::string& param);
-		void	kMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter);
-		void	tMode(const Client& client, Channel& channel, const std::vector<std::string>& params);
-		void	iMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter);
-		void	oMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter);
-		void	lMode(const Client& client, Channel& channel, const std::vector<std::string>& params, size_t& counter);
+		void 	checkCommand(Client&);
+		void 	extractCmd(const std::string&);
+		void	handlePASS(Client&, const std::string&);
+		void	handleNICK(Client&, const std::string&);
+		void	handleUSER(Client&, const std::string&);
+		void	handleJOIN(Client&, const std::string&);
+		void	handleKICK(const Client&, const std::string&);
+		void	handlePRIVMSG(Client&, const std::string&);
+		void	handleTOPIC(const Client&, const std::string&);
+		void	handleINVITE(const Client&, const std::string&);
+		void	handleWHO(const Client&, const std::string&);
+		void 	handleMODE(const Client&, const std::string&);
+		void	kMode(const Client&, Channel&, const std::vector<std::string>&, size_t&);
+		void	tMode(const Client&, Channel&, const std::vector<std::string>&);
+		void	iMode(const Client&, Channel&, const std::vector<std::string>&);
+		void	oMode(const Client&, Channel&, const std::vector<std::string>&, size_t&);
+		void	lMode(const Client&, Channel&, const std::vector<std::string>&, size_t&);
 
 		// client
 		std::map<int, Client>::iterator findClientByNick(const std::string& nickname);
 
 		// channels
 		void	createChannel(const std::string& channelName, const Client& currentClient);
-		bool	checkChannelPermissions(const Client& client, const Channel& channel) const;
+		bool	checkChannelPermissions(const Client& client, const Channel& channel, const std::vector<std::string>& params) const;
 		std::map<std::string, Channel>::iterator	findChannel(const std::string& channelName);
 		// void	RPL_CHANNELMODEIS(const Client& client, const std::string& channelName);
 
