@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:21:28 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/18 17:44:31 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/25 17:54:43 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ class Client
         bool                        _hasNick;
         bool                        _hasUser;
         bool                        _registred;
+        bool                        _isQuiting;
         std::string                 _username;
         std::string                 _nickname;
         std::string                 _oldNickname;
@@ -40,6 +41,7 @@ class Client
         void    setHasNick();
         void    setHasUser();
         void    setRegistred();
+        void    setIsQuiting();
         void    setNickname(const std::string&);
         void    setUsername(const std::string&);
 
@@ -54,6 +56,7 @@ class Client
         std::string                 getUsername() const;
         std::string                 getIncompleteMsg() const;
         std::set<std::string>       getChannels() const;
+        bool                        getIsQuiting() const;
 
         // members
         void    closeFd();

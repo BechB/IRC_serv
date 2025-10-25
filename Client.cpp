@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/23 16:34:55 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/18 16:31:57 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/25 17:59:13 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@ Client::Client(int fd)
     _hasNick = false;
     _hasUser = false;
     _registred = false;
+    _isQuiting = false;
 }
 
 
@@ -28,6 +29,8 @@ Client::Client(int fd)
 void    Client::setHasPass() {_hasPass = true;}
 void    Client::setHasUser() {_hasUser = true;}
 void    Client::setHasNick() {_hasNick = true;}
+void    Client::setRegistred() {_registred = true;}
+void    Client::setIsQuiting() {_isQuiting = true;}
 void    Client::setUsername(const std::string& username) {_username = username;}
 void    Client::setNickname(const std::string& nickname)
 {
@@ -35,19 +38,19 @@ void    Client::setNickname(const std::string& nickname)
     _nickname = nickname;
 }
 
-void    Client::setRegistred() {_registred = true;}
 
 // getters
-int                         Client::getFd() const {return _fd;}
-bool                        Client::getHasPass() const {return _hasPass;}
-bool                        Client::getHasNick() const {return _hasNick;}
-bool                        Client::getHasUser() const {return _hasUser;}
-bool                        Client::getIsRegistred() const {return _registred;}
-std::string                 Client::getUsername() const {return _username;}
-std::string                 Client::getNickname() const {return _nickname;}
-std::string                 Client::getIncompleteMsg() const {return _incompleteMsg;}
-std::set<std::string>       Client::getChannels() const {return _channels;}
-std::string                 Client::getOldNickname() const {return _oldNickname;}
+int                     Client::getFd() const {return _fd;}
+bool                    Client::getHasPass() const {return _hasPass;}
+bool                    Client::getHasNick() const {return _hasNick;}
+bool                    Client::getHasUser() const {return _hasUser;}
+bool                    Client::getIsQuiting() const {return _isQuiting;}
+bool                    Client::getIsRegistred() const {return _registred;}
+std::string             Client::getUsername() const {return _username;}
+std::string             Client::getNickname() const {return _nickname;}
+std::string             Client::getIncompleteMsg() const {return _incompleteMsg;}
+std::set<std::string>   Client::getChannels() const {return _channels;}
+std::string             Client::getOldNickname() const {return _oldNickname;}
 
 
 // members

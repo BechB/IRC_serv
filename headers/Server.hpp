@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/19 15:37:15 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/25 18:26:27 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,9 +92,9 @@ class Server
 		std::map<std::string, Channel>	getChannels() const;
 		
 		int 	Routine();
-		int    	handle_password(char *);
-		int    	handle_port(char *);
-		int		check_password(int, std::string);
+		int    	handlePassword(char *);
+		int    	handlePort(char *);
+		int		checkPassword(int, std::string);
 		bool	isNickExist(const std::string&);
 
 		// COMMANDS
@@ -104,12 +104,14 @@ class Server
 		void	handleNICK(Client&, const std::string&);
 		void	handleUSER(Client&, const std::string&);
 		void	handleJOIN(Client&, const std::string&);
+		void	handlePART(Client&, const std::string&);
 		void	handleKICK(const Client&, const std::string&);
 		void	handlePRIVMSG(Client&, const std::string&);
 		void	handleTOPIC(const Client&, const std::string&);
 		void	handleINVITE(const Client&, const std::string&);
 		void	handleWHO(const Client&, const std::string&);
 		void 	handleMODE(const Client&, const std::string&);
+		void 	handleQUIT(Client&);
 		void	kMode(const Client&, Channel&, const std::vector<std::string>&, size_t&);
 		void	tMode(const Client&, Channel&, const std::vector<std::string>&);
 		void	iMode(const Client&, Channel&, const std::vector<std::string>&);
@@ -123,7 +125,6 @@ class Server
 		void	createChannel(const std::string& channelName, const Client& currentClient);
 		bool	checkChannelPermissions(const Client& client, const Channel& channel, const std::vector<std::string>& params) const;
 		std::map<std::string, Channel>::iterator	findChannel(const std::string& channelName);
-		// void	RPL_CHANNELMODEIS(const Client& client, const std::string& channelName);
 
 		// system msg
 		void	broadcastNickChange(const Client& client);

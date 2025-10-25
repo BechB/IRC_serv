@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/19 19:40:47 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/25 19:15:13 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,11 +99,11 @@ Server::Server(int argc, char **argv)
 		}
 	}
 
-	if(handle_port(argv[1]) == 1)
+	if(handlePort(argv[1]) == 1)
 		exit(1);
 	else
-		_port = handle_port(argv[1]);
-	if(handle_password(argv[2]) == 1)
+		_port = handlePort(argv[1]);
+	if(handlePassword(argv[2]) == 1)
 		exit(1);
 
 	_name = "ircserv";
@@ -144,7 +144,7 @@ std::map<std::string, Channel>	Server::getChannels() const{return _channels;}
 
 
 // members
-int    Server::handle_port(char *port)
+int    Server::handlePort(char *port)
 {
 	char *endptr;
 	errno = 0;
@@ -182,7 +182,7 @@ int    Server::handle_port(char *port)
 }
 
 
-int Server::handle_password(char *password)
+int Server::handlePassword(char *password)
 {
 	int upper_count = 0;
 	int lower_count = 0;
@@ -233,7 +233,6 @@ int Server::handle_password(char *password)
 	return 0;
 }
 
-
 int Server::Routine()
 {
     fd_set all_fds;
@@ -242,7 +241,6 @@ int Server::Routine()
 	int max_fd = _sockfd;
 	char buffer[4096];
 
-	//fd_set read_fds = all_fds; // Copie de l'ensemble principal
 	while(1)
 	{
 		fd_set read_fds = all_fds;
@@ -275,7 +273,7 @@ int Server::Routine()
 		{
 			int client_fd = it->first;
     		Client& client = it->second;
-
+			
 			/*
 			fd_set est une structure fixe et limitée par FD_SETSIZE (souvent 1024).
 			Quand un client se déconnecte, tu dois facilement retirer son descripteur de la liste.
@@ -290,45 +288,62 @@ int Server::Routine()
 			Si recv() == 0 (déconnexion) → close(client_fd) + retirer du clients.
 			*/
 			if (FD_ISSET(client_fd, &read_fds)) 
-			{
-				//le client a envoye des donnees
+            {
+                //le client a envoye des donnees
                 memset(buffer, '\0', 500);
 
                 int signal = recv(client_fd, buffer, sizeof(buffer), MSG_DONTWAIT);
+				
+				std::string clientName = client.getNickname();
+				if (clientName.empty())
+					clientName = "a client without nickname/username";
+				
+				// ctrl C
+				if (signal == 0 || client.getIsQuiting())
+				{
+					close(client_fd);
+					FD_CLR(client_fd, &all_fds);
+					_clients.erase(it++);
+					std::cout << clientName <<" is disconnected" << std::endl;
+					continue;
+				}
                 std::cout << "BUFFER [" << buffer << "]" << std::endl;
-				std::cout << "signal: " << signal << std::endl;
-				std::string message(buffer);
+                std::cout << "signal: " << signal << std::endl;
+                std::string message(buffer);
 
-				//handle ctrl + d
-				if (message.find('\n') == std::string::npos)
+				if (message.find("\n") == std::string::npos)
 				{
 					client.updateIncompMsg(message);
-					continue;
+					break;
 				}
 				else
 				{
 					message = client.getIncompleteMsg() + message;
 					client.clearIncompMsg();
 				}
+				
+                if (signal < 0)
+                {
+                    
+                    // if (message.find("\n") == std::string::npos)
+                    // {
+                    //     client.updateIncompMsg(message);
+                    //     continue;
+                    // }
+                    // else
+                    // {
+                    //     message = client.getIncompleteMsg() + message;
+                    //     client.clearIncompMsg();
+                    // }
+					// std::cout << "Signal error with " << clientName << std::endl;
 
-				if (signal <= 0)
-				{
-					std::string clientName = client.getNickname();
-					if (clientName.empty())
-						clientName = "a client without nickname/username";
-
-					if (signal < 0)
-						std::cout << "Signal error with " << clientName << std::endl;
-					else
-						std::cout << clientName << " are disconnected" << std::endl;
-					
-					// bien virer le client de tous les channels. Donc boucler sur tous les channels dans client::_channels
-					// et Channell::removeClient(le client) 
-					client.closeFd();
-					FD_CLR(client_fd, &all_fds);
-					_clients.erase(it++);
-					continue;
-				}
+                    // bien virer le client de tous les channels. Donc boucler sur tous les channels dans client::_channels
+                    // et Channell::removeClient(le client) 
+                    client.closeFd();
+                    FD_CLR(client_fd, &all_fds);
+                    _clients.erase(it++);
+                    continue;
+                }
 				else
 				{
 					for (size_t i = 0; i < message.size(); ++i)
@@ -337,8 +352,14 @@ int Server::Routine()
 						message[i] = '\n';
 					}
 					message = message.substr(0, message.find('\n'));
-					
+
 					extractCmd(message);
+					if (_cmd.first == "QUIT")
+					{
+						client.setIsQuiting();
+						continue;
+					}
+					
 					const bool wasRegister = client.getIsRegistred();
 					checkCommand(client);
 					const bool isNowRegister = client.getHasPass() && client.getHasNick() && client.getHasUser();
@@ -349,7 +370,7 @@ int Server::Routine()
 						std::string welcomeMsg = " :Welcome to IRC server, " + client.getNickname() + "!";
 						sendSystemMsg(client, "001", welcomeMsg);
 					}
-				
+
 					if (!wasRegister && !isNowRegister)
 					{
 						const std::string& command = _cmd.first;
@@ -368,11 +389,10 @@ int Server::Routine()
 			++it;
 		}
 	}
-	perror("");
 }
 
 
-int	Server::check_password(int client_fd, std::string buffer)
+int	Server::checkPassword(int client_fd, std::string buffer)
 {
 	std::string try_pass = buffer.substr(0, strlen(buffer.c_str()) - 1);
 	write(client_fd, "Enter password : ", 17);
@@ -477,6 +497,9 @@ void Server::checkCommand(Client& client)
 {
 	std::string& command = _cmd.first;
 	
+
+	
+	
 	if (command == "CAP")
 		return;
 
@@ -500,50 +523,133 @@ void Server::checkCommand(Client& client)
 		return;
 	}
 	
-	if (command == "JOIN")
+	if (command == "QUIT")
 	{
-		handleJOIN(client, parameter);
+		handleQUIT(client);
 		return;
 	}
 
-	if (command == "TOPIC")
+	if (client.getIsRegistred())
 	{
-		handleTOPIC(client, parameter);
+		
+		if (command == "JOIN")
+		{
+			handleJOIN(client, parameter);
+			return;
+		}
+
+		if (command == "PART")
+		{
+			handlePART(client, parameter);
+			return;
+		}
+
+		if (command == "TOPIC")
+		{
+			handleTOPIC(client, parameter);
+			return;
+		}
+
+		if (command == "MODE")
+		{
+			handleMODE(client, parameter);
+			return;
+		}
+
+		if (command == "WHO")
+		{
+			handleWHO(client, parameter);
+			return;
+		}
+
+		if (command == "INVITE")
+		{
+			handleINVITE(client, parameter);
+			return;
+		}
+
+		if (command == "KICK")
+		{
+			handleKICK(client, parameter);
+			return;
+		}
+
+		if (command == "PRIVMSG")
+		{
+			handlePRIVMSG(client, parameter);
+			return;
+		}
+		else
+			sendSystemMsg(client, "421", " " + command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
+	}
+}
+
+void Server::handlePART(Client& client, const std::string& param)
+{
+	if (param.empty())
+	{
+		sendSystemMsg(client, "461", " PART" ERR_NEEDMOREPARAMS);
+		return;
+	}
+	
+	const std::vector<std::string>& params = divideParams(param);
+	const std::string& channelName = params[0];
+	
+	
+	std::map<std::string, Channel>::iterator itChannel = findChannel(channelName);
+
+	if (channelName.empty() || channelName[0] != '#' || itChannel == _channels.end())
+	{
+		sendSystemMsg(client, "403", + " " + channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
 
-	if (command == "MODE")
+	int fd = client.getFd();
+	Channel& channel = itChannel->second;
+
+	if (!channel.isMember(fd))
 	{
-		handleMODE(client, parameter);
+		sendSystemMsg(client, "442", + " " + channelName + ERR_NOTONCHANNEL);
 		return;
 	}
+	
+	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " PART " + channelName + "\r\n";
+	channel.broadcast(reply);
+	
+	channel.removeOperator(fd);
+	channel.removeMember(fd);
+	channel.removeGuest(fd);
+	client.leaveChannel(channelName);
+	
+}
 
-	if (command == "WHO")
+void 	Server::handleQUIT(Client& client)
+{
+	int fd = client.getFd();
+	std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " QUIT :" + client.getNickname()+ " is disconnected" + "\r\n";
+	const std::set<std::string>& channels = client.getChannels();
+	std::set<std::string>::iterator itClientChannels = channels.begin();
+	
+	if (itClientChannels != channels.end())
 	{
-		handleWHO(client, parameter);
-		return;
-	}
+		for (; itClientChannels != channels.end(); ++itClientChannels)
+		{
+			std::map<std::string, Channel>::iterator itChannel = findChannel(*itClientChannels);
+			if (itChannel != _channels.end())
+			{
+				Channel& channel = itChannel->second;
+	
+				channel.broadcast(reply);
+				
+				if (channel.isOperator(fd))
+					channel.removeOperator(fd);
 
-	if (command == "INVITE")
-	{
-		handleINVITE(client, parameter);
-		return;
+				channel.removeMember(fd);
+			}		
+		}
+		
+		client.setIsQuiting();
 	}
-
-	if (command == "KICK")
-	{
-		handleKICK(client, parameter);
-		return;
-	}
-
-	if (command == "PRIVMSG")
-	{
-		handlePRIVMSG(client, parameter);
-		return;
-	}
-	// autres if command..
-
-	sendSystemMsg(client, "421", " " + command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
 }
 
 void Server::handleKICK(const Client& client, const std::string& param)
@@ -558,6 +664,7 @@ void Server::handleKICK(const Client& client, const std::string& param)
 		sendSystemMsg(client, "461", "KICK" ERR_NEEDMOREPARAMS);
 		return;
 	}
+	
 	if (channelName[0] != '#')
 	{
 		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
@@ -1002,22 +1109,25 @@ void Server::kMode(const Client& client, Channel& channel, const std::vector<std
 		return;
 
 	channel.setKey(password);
-	std::string reply = ":" + client.getNickname() + "!" + client.getUsername() +  "@" + _name + " MODE " + channel.getName() + " +k " + password + "\r\n";
+	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() +  "@" + _name + " MODE " + channel.getName() + " +k " + password + "\r\n";
 	channel.broadcast(reply);
 
 }
+
+
 void Server::handleTOPIC(const Client& client, const std::string& param)
 {
 	const std::vector<std::string>& params = divideParams(param);
 	const std::string& channelName = params[0];
 	
-	std::map<std::string, Channel>::iterator itChannel = findChannel(channelName);
 	
 	if (channelName.empty() || channelName[0] != '#')
 	{
 		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
+	
+	std::map<std::string, Channel>::iterator itChannel = findChannel(channelName);
 	
 	if (itChannel == _channels.end())
 	{
@@ -1143,13 +1253,7 @@ void Server::handlePRIVMSG(Client& client, const std::string& param)
 
 
 void Server::handleJOIN(Client& client, const std::string& param)
-{
-	if (!client.getIsRegistred())
-	{
-		sendSystemMsg(client, "451", ERR_NOTREGISTERED);
-		return;
-	}
-	
+{	
 	const std::vector<std::string>& params = divideParams(param);
 	const std::string& channelName = params[0];
 	
@@ -1261,7 +1365,9 @@ void Server::extractCmd(const std::string& message)
 
 void Server::sendSystemMsg(const Client& client, const std::string& code, const std::string& errmsg) const
 {
-	std::string reply = ":" + _name + " " + code + " " + client.getNickname() + errmsg + "\r\n";
+	std::string nick = client.getNickname().empty() ? "unknown user" : client.getNickname();
+
+	std::string reply = ":" + _name + " " + code + " " + nick + errmsg + "\r\n";
 	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }
 
