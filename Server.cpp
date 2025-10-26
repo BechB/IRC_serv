@@ -233,6 +233,7 @@ int Server::handlePassword(char *password)
 	return 0;
 }
 
+
 int Server::Routine()
 {
     fd_set all_fds;
@@ -311,6 +312,7 @@ int Server::Routine()
                 std::cout << "signal: " << signal << std::endl;
                 std::string message(buffer);
 
+				// ctrl D
 				if (message.find("\n") == std::string::npos)
 				{
 					client.updateIncompMsg(message);
@@ -324,19 +326,6 @@ int Server::Routine()
 				
                 if (signal < 0)
                 {
-                    
-                    // if (message.find("\n") == std::string::npos)
-                    // {
-                    //     client.updateIncompMsg(message);
-                    //     continue;
-                    // }
-                    // else
-                    // {
-                    //     message = client.getIncompleteMsg() + message;
-                    //     client.clearIncompMsg();
-                    // }
-					// std::cout << "Signal error with " << clientName << std::endl;
-
                     // bien virer le client de tous les channels. Donc boucler sur tous les channels dans client::_channels
                     // et Channell::removeClient(le client) 
                     client.closeFd();
@@ -346,6 +335,11 @@ int Server::Routine()
                 }
 				else
 				{
+					// handle hexchat sign in
+					if (isHexchatSignIn(message))
+						//todo
+
+
 					for (size_t i = 0; i < message.size(); ++i)
 					{
 						if (message[i] == '\r')

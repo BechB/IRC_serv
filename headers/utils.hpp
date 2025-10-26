@@ -12,5 +12,6 @@
 
 #include <iostream>
 
+bool isHexchatSignIn(const std::string& s);
 bool isOnlyDigit(const std::string& str);
 bool isValidName(const std::string& name);

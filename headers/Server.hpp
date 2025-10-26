@@ -74,6 +74,7 @@ class Server
 	private:
 		int 								_port;
 		int 								_sockfd;
+		bool								_hxSignedIn;
 
 		std::pair<std::string, std::string> _cmd;
 		std::map<int, Client> 				_clients;

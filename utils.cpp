@@ -12,6 +12,13 @@
 
 #include <iostream>
 
+bool isHexchatSignIn(const std::string& s)
+{
+	return (s.find("PASS") != std::string::npos &&
+           s.find("USER") != std::string::npos &&
+           s.find("NICK") != std::string::npos);
+}
+
 bool isOnlyDigit(const std::string& str)
 {
     if (str.empty())
