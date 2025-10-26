@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:21:28 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/25 17:54:43 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/26 16:51:13 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ class Client
         bool                        _hasUser;
         bool                        _registred;
         bool                        _isQuiting;
+        bool                        _hexchatSignedIn;
         std::string                 _username;
         std::string                 _nickname;
         std::string                 _oldNickname;
@@ -41,6 +42,7 @@ class Client
         void    setHasNick();
         void    setHasUser();
         void    setRegistred();
+        void    setHexchatSignedIn();
         void    setIsQuiting();
         void    setNickname(const std::string&);
         void    setUsername(const std::string&);
@@ -51,6 +53,7 @@ class Client
         bool                        getHasPass() const;
         bool                        getHasNick() const;
         bool                        getHasUser() const;
+        bool                        getHexchatSignedIn() const;
         std::string                 getNickname() const;
         std::string                 getOldNickname() const;
         std::string                 getUsername() const;

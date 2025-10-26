@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/25 18:26:27 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/26 16:51:26 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,7 +74,6 @@ class Server
 	private:
 		int 								_port;
 		int 								_sockfd;
-		bool								_hxSignedIn;
 
 		std::pair<std::string, std::string> _cmd;
 		std::map<int, Client> 				_clients;
@@ -100,6 +99,7 @@ class Server
 
 		// COMMANDS
 		void 	checkCommand(Client&);
+		void	hxSignIn(Client& client, const std::string&);
 		void 	extractCmd(const std::string&);
 		void	handlePASS(Client&, const std::string&);
 		void	handleNICK(Client&, const std::string&);

@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: aldalmas <aldalmas@student.42.fr>          +#+  +:+       +#+         #
+#    By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/07/15 10:05:32 by bbousaad          #+#    #+#              #
-#    Updated: 2025/09/17 16:00:19 by aldalmas         ###   ########.fr        #
+#    Updated: 2025/10/26 14:24:01 by aldalmas         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,6 @@ NAME = ircserv
 
 SRC = main.cpp \
 		Server.cpp \
-		Command.cpp \
 		Client.cpp \
 		Channel.cpp \
 		utils.cpp \

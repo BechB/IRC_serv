@@ -6,11 +6,12 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/25 19:15:13 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/26 17:47:27 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "headers/Server.hpp"
+
 
 // in createChannel()
 static bool parseJoinParams(const std::string& params)
@@ -50,7 +51,7 @@ static std::vector<std::string> divideParams(const std::string& param)
 			params.push_back(word);
 			break;
 		}
-		
+
 		params.push_back(word);
 		
 		if (word == ":")
@@ -79,6 +80,32 @@ static bool findColon(std::string& msg)
 }
 
 
+void Server::hxSignIn(Client& client, const std::string& allCommands)
+{
+	if (allCommands.find("CAP LS 302") != std::string::npos)
+		return;
+
+	std::istringstream iss(allCommands);
+	std::string line;
+	
+	while (std::getline(iss, line))
+	{
+		if (!line.empty() && line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
+
+		std::cout << "line to treat: " << line << std::endl;
+		if (line.empty())
+			continue;
+
+		extractCmd(line);
+		checkCommand(client);
+	}
+
+	if (client.getIsRegistred())
+		client.setHexchatSignedIn();
+	std::cout << "username: " << client.getUsername() << std::endl;
+	std::cout << "nickname: " << client.getNickname() << std::endl;
+}
 
 Server::Server(int argc, char **argv)
 {
@@ -117,8 +144,7 @@ Server::Server(int argc, char **argv)
         std::cerr << "Error: socket creation failed" << std::endl;
 		exit(1);
 	}
-	else
-    std::cout << "OK" << std::endl;
+
     int value;
     setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int)); //parametre le serveur pour que l ip soit utilisable sans delai
 	fcntl(_sockfd, F_SETFL, O_NONBLOCK); //rend le socket non bloquant pour plusieurs client,
@@ -135,7 +161,6 @@ Server::~Server()
 	for (; it != _clients.end(); ++it)
 		it->second.closeFd();
 }
-
 
 // getters 
 std::string 					Server::getName() const {return _name;}
@@ -297,7 +322,7 @@ int Server::Routine()
 				
 				std::string clientName = client.getNickname();
 				if (clientName.empty())
-					clientName = "a client without nickname/username";
+					clientName = "an unknown client";
 				
 				// ctrl C
 				if (signal == 0 || client.getIsQuiting())
@@ -335,10 +360,21 @@ int Server::Routine()
                 }
 				else
 				{
+					const bool wasRegister = client.getIsRegistred();
+					
 					// handle hexchat sign in
-					if (isHexchatSignIn(message))
-						//todo
-
+					if (!client.getHexchatSignedIn() && isHexchatSignIn(message))
+					{
+						hxSignIn(client, message);
+						const bool isNowRegister = client.getHasPass() && client.getHasNick() && client.getHasUser();
+						if (!wasRegister && isNowRegister)
+						{
+							client.setRegistred();
+							std::string welcomeMsg = " :Welcome to IRC server, " + client.getNickname() + "!";
+							sendSystemMsg(client, "001", welcomeMsg);
+						}
+						continue;
+					}
 
 					for (size_t i = 0; i < message.size(); ++i)
 					{
@@ -350,11 +386,14 @@ int Server::Routine()
 					extractCmd(message);
 					if (_cmd.first == "QUIT")
 					{
-						client.setIsQuiting();
+						if (client.getIsRegistred())
+							handleQUIT(client);
+						else
+							client.setIsQuiting();
 						continue;
 					}
+
 					
-					const bool wasRegister = client.getIsRegistred();
 					checkCommand(client);
 					const bool isNowRegister = client.getHasPass() && client.getHasNick() && client.getHasUser();
 					
@@ -375,16 +414,12 @@ int Server::Routine()
 							send(client.getFd(), reply.c_str(), reply.size(), 0);
 						}
 					}
-					
-					// std::string message(buffer);
-					// message = message.substr(0, message.find("\r")); // coupe à \r si telnet
 				}
 			}
 			++it;
 		}
 	}
 }
-
 
 int	Server::checkPassword(int client_fd, std::string buffer)
 {
@@ -420,7 +455,6 @@ void Server::handlePASS(Client& client, const std::string& pass)
 	client.setHasPass();
 }
 
-// reach all the channels of the client, and will notify each client in these same channels the nick change 
 void Server::broadcastNickChange(const Client& client)
 {
 	const std::set<std::string>& channels = client.getChannels();
@@ -482,17 +516,17 @@ void Server::handleUSER(Client& client, const std::string& name)
 		sendSystemMsg(client, "462", ERR_ALREADYREGISTRED);
 		return;
 	}
-
+	std::istringstream iss(name);
+    std::string username;
+    iss >> username;
+	
 	client.setHasUser();
-	client.setUsername(name);
+	client.setUsername(username);
 }
 
 void Server::checkCommand(Client& client)
 {
 	std::string& command = _cmd.first;
-	
-
-	
 	
 	if (command == "CAP")
 		return;
@@ -620,7 +654,7 @@ void Server::handlePART(Client& client, const std::string& param)
 void 	Server::handleQUIT(Client& client)
 {
 	int fd = client.getFd();
-	std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " QUIT :" + client.getNickname()+ " is disconnected" + "\r\n";
+	std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " QUIT :" + client.getNickname() + " is disconnected" + "\r\n";
 	const std::set<std::string>& channels = client.getChannels();
 	std::set<std::string>::iterator itClientChannels = channels.begin();
 	
@@ -633,13 +667,10 @@ void 	Server::handleQUIT(Client& client)
 			{
 				Channel& channel = itChannel->second;
 	
-				channel.broadcast(reply);
-				
-				if (channel.isOperator(fd))
-					channel.removeOperator(fd);
-
+				channel.broadcast(reply, fd);
+				channel.removeOperator(fd);
 				channel.removeMember(fd);
-			}		
+			}
 		}
 		
 		client.setIsQuiting();
@@ -1168,9 +1199,7 @@ void Server::handleTOPIC(const Client& client, const std::string& param)
 	{		
 		std::map<int, Client>::const_iterator it_map = _clients.find(*it_member);
 		if (it_map != _clients.end())
-		{
 			RPL_TOPIC(it_map->second, channel);
-		}
 	}
 }
 
@@ -1285,7 +1314,8 @@ void Server::handleJOIN(Client& client, const std::string& param)
 	if (itChannel->second.getInvitOnly())
 		itChannel->second.removeGuest(client.getFd());
 	
-	const std::string reply = ":" + client.getNickname() + " JOIN " + channelName + "\r\n";
+	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " JOIN " + channelName + "\r\n";
+
 	itChannel->second.broadcast(reply);
 	if (itChannel->second.getTopic().empty())
 		RPL_NOTOPIC(client, itChannel->second);
