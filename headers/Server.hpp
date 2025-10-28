@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/26 16:51:26 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/28 17:32:37 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,8 +37,8 @@
 #include "utils.hpp"
 
 // miscelaneous
-#define ERR_NEEDMOREPARAMS " :Not enough parameters" 			// 461
-#define ERR_UNKNOWNCOMMAND " :Unknown command" 					// 421
+#define ERR_NEEDMOREPARAMS " :Not enough parameters" 			// 461 <command> :
+#define ERR_UNKNOWNCOMMAND " :Unknown command" 					// 421 <command> :
 
 // profile / authenticate
 #define ERR_NONICKNAMEGIVEN " :No nickname given" 				// 431

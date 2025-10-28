@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/26 17:47:27 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/28 17:25:57 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -1142,16 +1142,18 @@ void Server::kMode(const Client& client, Channel& channel, const std::vector<std
 
 void Server::handleTOPIC(const Client& client, const std::string& param)
 {
-	const std::vector<std::string>& params = divideParams(param);
-	const std::string& channelName = params[0];
-	
-	
-	if (channelName.empty() || channelName[0] != '#')
+
+	std::cout << "ICI\n";	
+	if (param.empty())
 	{
-		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
+		sendSystemMsg(client, "403", " TOPIC" ERR_NEEDMOREPARAMS);
 		return;
 	}
 	
+	const std::vector<std::string>& params = divideParams(param);
+	const std::string& channelName = params[0];
+	
+	std::cout << "ICI2\n";
 	std::map<std::string, Channel>::iterator itChannel = findChannel(channelName);
 	
 	if (itChannel == _channels.end())
@@ -1159,7 +1161,7 @@ void Server::handleTOPIC(const Client& client, const std::string& param)
 		sendSystemMsg(client, "442", channelName + ERR_NOTONCHANNEL);
 		return;
 	}
-	
+	std::cout << "ICI3\n";	
 	Channel& channel = itChannel->second;
 	
 	if (params.size() < 2)
@@ -1172,17 +1174,17 @@ void Server::handleTOPIC(const Client& client, const std::string& param)
 		return;
 	}
 
-	
+	std::cout << "ICI4\n";	
 	if (channel.getTopicRestriction() && !channel.isOperator(client.getFd()))
 	{
 		sendSystemMsg(client, "482", channel.getName() + " " + ERR_CHANOPRIVSNEEDED);
 		return;
 	}
-	
+	std::cout << "ICI5\n";	
 	std::string topic;
 	for (size_t i = 1; i < params.size(); ++i)
 		topic += params[i];
-	
+	std::cout << "ICI6\n";	
 	if (params.size() < 3 || !findColon(topic))
 	{
 		sendSystemMsg(client, "461", " TOPIC" ERR_NEEDMOREPARAMS);
