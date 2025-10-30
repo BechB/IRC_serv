@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/23 16:34:55 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/26 16:51:00 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/30 15:14:36 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ void    Client::setHasPass() {_hasPass = true;}
 void    Client::setHasUser() {_hasUser = true;}
 void    Client::setHasNick() {_hasNick = true;}
 void    Client::setRegistred() {_registred = true;}
-void    Client::setHexchatSignedIn() {_hexchatSignedIn = true;}
+void    Client::setHexchatSignedIn() {_hexchatSignedIn = !_hexchatSignedIn;}
 void    Client::setIsQuiting() {_isQuiting = true;}
 void    Client::setUsername(const std::string& username) {_username = username;}
 void    Client::setNickname(const std::string& nickname)

@@ -57,13 +57,13 @@
 #define ERR_USERNOTINCHANNEL " :They aren't on that channel" 	// 441 <nick> <canal> :
 #define ERR_NOTONCHANNEL " :You're not on that channel" 		// 442 <canal> :
 #define ERR_USERONCHANNEL " :is already on channel" 			// 443 <nick> <canal> :
-#define ERR_CHANNELISFULL " :Cannot join channel (+l)" 		// 471 <canal> :
+#define ERR_CHANNELISFULL " :Cannot join channel (+l)" 			// 471 <canal> :
 #define ERR_INVITEONLYCHAN " :Cannot join channel (+i)" 		// 473 <canal> :
-#define ERR_BADCHANNELKEY " :Cannot join channel (+k)" 		// 475 <canal> :
+#define ERR_BADCHANNELKEY " :Cannot join channel (+k)" 			// 475 <canal> :
 #define ERR_CHANOPRIVSNEEDED " :You're not channel operator" 	// 482 <canal> : 
 
 // mode
-#define ERR_UNKNOWNMODE " :is unknown mode char to me" 			// 472
+#define ERR_UNKNOWNMODE " :is unknown mode char to me" 			// 472 <char> :
 
 
 class Client;

@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/13 14:19:35 by aldalmas          #+#    #+#             */
-/*   Updated: 2025/10/25 16:33:27 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/30 15:02:15 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,18 @@
 
 bool isHexchatSignIn(const std::string& s)
 {
-	return (s.find("PASS") != std::string::npos &&
-           s.find("USER") != std::string::npos &&
-           s.find("NICK") != std::string::npos);
+    if (s.find("PASS") != std::string::npos
+        && s.find("USER") != std::string::npos 
+        && s.find("NICK") != std::string::npos)
+        return true;
+    
+    if (s.find("CAP LS 302") != std::string::npos
+        && s.find("PASS") != std::string::npos
+        && s.find("USER") != std::string::npos 
+        && s.find("NICK") != std::string::npos)
+        return true;
+
+    return false;
 }
 
 bool isOnlyDigit(const std::string& str)
