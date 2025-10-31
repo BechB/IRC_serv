@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/28 17:32:37 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/31 16:27:22 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,7 @@
 #define ERR_INVITEONLYCHAN " :Cannot join channel (+i)" 		// 473 <canal> :
 #define ERR_BADCHANNELKEY " :Cannot join channel (+k)" 			// 475 <canal> :
 #define ERR_CHANOPRIVSNEEDED " :You're not channel operator" 	// 482 <canal> : 
+#define ERR_TOOMANYTARGETS " :Duplicate recipients. No message delivered" // 407 <target> :
 
 // mode
 #define ERR_UNKNOWNMODE " :is unknown mode char to me" 			// 472 <char> :
@@ -95,7 +96,7 @@ class Server
 		int    	handlePassword(char *);
 		int    	handlePort(char *);
 		int		checkPassword(int, std::string);
-		bool	isNickExist(const std::string&);
+		bool	isNiERR_TOOMANYTARGETSckExist(const std::string&);
 
 		// COMMANDS
 		void 	checkCommand(Client&);

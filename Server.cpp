@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/30 15:49:07 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/10/31 16:14:38 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -692,10 +692,11 @@ void Server::handleKICK(const Client& client, const std::string& param)
 		sendSystemMsg(client, "461", " KICK" ERR_NEEDMOREPARAMS);
 		return;
 	}
-	
+
 	if (channelName[0] != '#')
 	{
-		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
+		std::cout << "on rentre ici\n" << std::endl;
+		sendSystemMsg(client, "403", " " + channelName + ERR_NOSUCHCHANNEL);
         return;
 	}
 
@@ -731,7 +732,7 @@ void Server::handleKICK(const Client& client, const std::string& param)
 		{
 			std::cout << "on rentre ici\n";
 			
-			sendSystemMsg(client, "441", + " " + targetName + " " + channelName + ERR_USERNOTINCHANNEL);
+			sendSystemMsg(client, "441", " " + targetName + " " + channelName + ERR_USERNOTINCHANNEL);
 			return;
 		}
 
@@ -819,7 +820,7 @@ void Server::handleINVITE(const Client& client, const std::string& param)
 		
 		if (channel.isMember(guestFd))
 		{
-			sendSystemMsg(client, "443", targetNickname + ERR_USERONCHANNEL);
+			sendSystemMsg(client, "443", " " + targetNickname + " " + channel.getName() + ERR_USERONCHANNEL);
 			return;
 		}
 
@@ -1172,9 +1173,10 @@ void Server::handleTOPIC(const Client& client, const std::string& param)
 
 	if (channel.getTopicRestriction() && !channel.isOperator(client.getFd()))
 	{
-		sendSystemMsg(client, "482", channel.getName() + " " + ERR_CHANOPRIVSNEEDED);
+		sendSystemMsg(client, "482", " " + channel.getName() + ERR_CHANOPRIVSNEEDED);
 		return;
 	}
+	
 	std::string topic;
 	for (size_t i = 1; i < params.size(); ++i)
 		topic += params[i];
@@ -1275,74 +1277,76 @@ void Server::handleJOIN(Client& client, const std::string& param)
 {	
 	const std::vector<std::string>& params = divideParams(param);
 	const std::string& channelName = params[0];
-	
+	std::cout << "DEBUG1\n";
 	if (!channelName.empty() && channelName[0] != '#')
 	{
 		sendSystemMsg(client, "403", + " " + channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
-
-	if (channelName.empty() || channelName == "#")
+	std::cout << "DEBUG2\n";
+	if (channelName.empty() || channelName == "#" || params.size() > 2)
 	{
 		sendSystemMsg(client, "461", " JOIN" ERR_NEEDMOREPARAMS);
 		return;
 	}
-
+	std::cout << "DEBUG3\n";
 	std::map<std::string, Channel>::iterator itChannel = findChannel(channelName);
 	
     if (itChannel == _channels.end())
 		createChannel(channelName, client); // client will be added in the channel's ctor (in _members & _operators)
 	else
 	{
+		std::cout << "DEBUG4\n";
 		if (itChannel->second.isMember(client.getFd()))
 			return;
-
+		std::cout << "DEBUG5\n";
 		if (!checkChannelPermissions(client, itChannel->second, params))
 			return;
-
+		std::cout << "DEBUG6\n";
 		itChannel->second.addMember(client.getFd());
 	}
+	std::cout << "DEBUG7\n";
 	client.joinChannel(channelName);
-
+	std::cout << "DEBUG8\n";
 	itChannel = findChannel(channelName);
-	
+	std::cout << "DEBUG9\n";
 	// +i is checked in checkChannelPermissions() and when a guest join a +i server , we must remove it from channel::_guests
 	if (itChannel->second.getInvitOnly())
 		itChannel->second.removeGuest(client.getFd());
-	
+	std::cout << "DEBUG10\n";
 	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " JOIN " + channelName + "\r\n";
-
+	std::cout << "DEBUG11\n";
 	itChannel->second.broadcast(reply);
+	std::cout << "DEBUG12\n";
 	if (itChannel->second.getTopic().empty())
 		RPL_NOTOPIC(client, itChannel->second);
 	else
 		RPL_TOPIC(client, itChannel->second);
-
+	std::cout << "DEBUG13\n";
 	handleWHO(client, channelName);
+	std::cout << "DEBUG14 fin\n";
 }
 
 bool Server::checkChannelPermissions(const Client& client, const Channel& channel, const std::vector<std::string>& params) const
 {
 	int limit = channel.getMemberLimit();
 	const std::set<int>& members = channel.getMembers();
-	
 	if (limit > 0 && (((int)members.size() + 1) > limit))
 	{
 		sendSystemMsg(client, "471", + " " + channel.getName() + ERR_CHANNELISFULL);
 		return false;
 	}
-
 	if (channel.getInvitOnly())
 	{
 		const std::set<int>& guests = channel.getGuest();
 		std::set<int>::const_iterator client_fd = guests.find(client.getFd());
+		std::cout << "DEBUG2 a\n";
 		if (client_fd == guests.end())
 		{
 			sendSystemMsg(client, "473", + " " + channel.getName() + ERR_INVITEONLYCHAN);
 			return false;
 		}
 	}
-
 	if (!channel.getKey().empty())
 	{
 		// params[0] = #chan, params[1] = key (optionnal)
@@ -1352,7 +1356,6 @@ bool Server::checkChannelPermissions(const Client& client, const Channel& channe
 			return false;
 		}
 	}
-
 	return true;
 }
 
