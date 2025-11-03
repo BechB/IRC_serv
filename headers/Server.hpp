@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 14:59:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/31 16:27:22 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/11/03 12:22:40 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,20 +92,22 @@ class Server
 		std::map<int, Client> 			getClients() const;
 		std::map<std::string, Channel>	getChannels() const;
 		
+		// server
 		int 	Routine();
-		int    	handlePassword(char *);
-		int    	handlePort(char *);
+		int    	handlePassword(char*);
+		int    	handlePort(char*);
 		int		checkPassword(int, std::string);
-		bool	isNiERR_TOOMANYTARGETSckExist(const std::string&);
+		bool	isNickExist(const std::string&);
 
-		// COMMANDS
+		// command
 		void 	checkCommand(Client&);
-		void	hxSignIn(Client& client, const std::string&);
+		void	hxSignIn(Client&, const std::string&);
 		void 	extractCmd(const std::string&);
 		void	handlePASS(Client&, const std::string&);
 		void	handleNICK(Client&, const std::string&);
 		void	handleUSER(Client&, const std::string&);
 		void	handleJOIN(Client&, const std::string&);
+		void 	handleQUIT(Client&);
 		void	handlePART(Client&, const std::string&);
 		void	handleKICK(const Client&, const std::string&);
 		void	handlePRIVMSG(Client&, const std::string&);
@@ -113,7 +115,6 @@ class Server
 		void	handleINVITE(const Client&, const std::string&);
 		void	handleWHO(const Client&, const std::string&);
 		void 	handleMODE(const Client&, const std::string&);
-		void 	handleQUIT(Client&);
 		void	kMode(const Client&, Channel&, const std::vector<std::string>&, size_t&);
 		void	tMode(const Client&, Channel&, const std::vector<std::string>&);
 		void	iMode(const Client&, Channel&, const std::vector<std::string>&);
@@ -123,8 +124,8 @@ class Server
 		// client
 		std::map<int, Client>::iterator findClientByNick(const std::string& nickname);
 
-		// channels
-		void	createChannel(const std::string& channelName, const Client& currentClient);
+		// channel
+		bool	createChannel(const std::string& channelName, const Client& currentClient);
 		bool	checkChannelPermissions(const Client& client, const Channel& channel, const std::vector<std::string>& params) const;
 		std::map<std::string, Channel>::iterator	findChannel(const std::string& channelName);
 

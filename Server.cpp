@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/21 13:27:02 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/31 16:14:38 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/11/03 12:19:16 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,21 +16,23 @@
 // in createChannel()
 static bool parseJoinParams(const std::string& params)
 {
-	std::string channelName = params;
-	std::istringstream iss(channelName);
+	std::istringstream iss(params);
+	std::string channelName, key, extra;
 
-	// iss will stop after reaching the first white space (or end of string), then grab the word before
 	if (!(iss >> channelName) || channelName.empty())
 		return false;
-	
-	// search if another word is found
-	std::string searchExtraWord;
 
-	if (iss >> searchExtraWord)
+	if (channelName[0] != '#')
+		return false;
+
+	iss >> key;
+
+	if (iss >> extra)
 		return false;
 
 	return true;
 }
+
 
 // used in the commands logic
 static std::vector<std::string> divideParams(const std::string& param)
@@ -105,7 +107,7 @@ void Server::hxSignIn(Client& client, const std::string& allCommands)
 
 Server::Server(int argc, char **argv)
 {
-    struct sockaddr_in addr;
+	struct sockaddr_in addr;
 //Pour l’utiliser dans une sockaddr_in, tu dois le convertir au format big-endian réseau
 
 	if (argc != 3)
@@ -130,19 +132,19 @@ Server::Server(int argc, char **argv)
 		exit(1);
 
 	_name = "ircserv";
-    _password = argv[2];
+	_password = argv[2];
 	addr.sin_port = htons(_port);
 	addr.sin_family = AF_INET; //pour que mon socket soit defeini en tant que IPV4
 	inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
 	_sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (_sockfd == -1)
 	{
-        std::cerr << "Error: socket creation failed" << std::endl;
+		std::cerr << "Error: socket creation failed" << std::endl;
 		exit(1);
 	}
 
-    int value;
-    setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int)); //parametre le serveur pour que l ip soit utilisable sans delai
+	int value;
+	setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int)); //parametre le serveur pour que l ip soit utilisable sans delai
 	fcntl(_sockfd, F_SETFL, O_NONBLOCK); //rend le socket non bloquant pour plusieurs client,
 	perror("");
 	bind(_sockfd, ((struct sockaddr *)&addr), sizeof(addr));
@@ -257,9 +259,9 @@ int Server::handlePassword(char *password)
 
 int Server::Routine()
 {
-    fd_set all_fds;
-    FD_ZERO(&all_fds);        // Vide le set
-    FD_SET(_sockfd, &all_fds); // Ajoute le socket serveur
+	fd_set all_fds;
+	FD_ZERO(&all_fds);        // Vide le set
+	FD_SET(_sockfd, &all_fds); // Ajoute le socket serveur
 	int max_fd = _sockfd;
 	char buffer[4096];
 
@@ -294,7 +296,7 @@ int Server::Routine()
 		for (; it != _clients.end();)
 		{
 			int client_fd = it->first;
-    		Client& client = it->second;
+			Client& client = it->second;
 			
 			/*
 			fd_set est une structure fixe et limitée par FD_SETSIZE (souvent 1024).
@@ -310,11 +312,11 @@ int Server::Routine()
 			Si recv() == 0 (déconnexion) → close(client_fd) + retirer du clients.
 			*/
 			if (FD_ISSET(client_fd, &read_fds)) 
-            {
-                //le client a envoye des donnees
-                memset(buffer, '\0', 500);
+			{
+				//le client a envoye des donnees
+				memset(buffer, '\0', 500);
 
-                int signal = recv(client_fd, buffer, sizeof(buffer), MSG_DONTWAIT);
+				int signal = recv(client_fd, buffer, sizeof(buffer), MSG_DONTWAIT);
 				
 				std::string clientName = client.getNickname();
 				if (clientName.empty())
@@ -331,9 +333,9 @@ int Server::Routine()
 					std::cout << clientName <<" is disconnected" << std::endl;
 					continue;
 				}
-                std::cout << "BUFFER [" << buffer << "]" << std::endl;
-                // std::cout << "signal: " << signal << std::endl;
-                std::string message(buffer);
+				std::cout << "BUFFER [" << buffer << "]" << std::endl;
+				// std::cout << "signal: " << signal << std::endl;
+				std::string message(buffer);
 
 				// ctrl D
 				if (message.find("\n") == std::string::npos)
@@ -347,15 +349,15 @@ int Server::Routine()
 					client.clearIncompMsg();
 				}
 				
-                if (signal < 0)
-                {
-                    // bien virer le client de tous les channels. Donc boucler sur tous les channels dans client::_channels
-                    // et Channell::removeClient(le client) 
-                    client.closeFd();
-                    FD_CLR(client_fd, &all_fds);
-                    _clients.erase(it++);
-                    continue;
-                }
+				if (signal < 0)
+				{
+					// bien virer le client de tous les channels. Donc boucler sur tous les channels dans client::_channels
+					// et Channell::removeClient(le client) 
+					client.closeFd();
+					FD_CLR(client_fd, &all_fds);
+					_clients.erase(it++);
+					continue;
+				}
 				else
 				{
 					const bool wasRegister = client.getIsRegistred();
@@ -391,7 +393,6 @@ int Server::Routine()
 						continue;
 					}
 
-					
 					checkCommand(client);
 					const bool isNowRegister = client.getHasPass() && client.getHasNick() && client.getHasUser();
 					
@@ -520,8 +521,8 @@ void Server::handleUSER(Client& client, const std::string& name)
 		return;
 	}
 	std::istringstream iss(name);
-    std::string username;
-    iss >> username;
+	std::string username;
+	iss >> username;
 	
 	client.setHasUser();
 	client.setUsername(username);
@@ -610,8 +611,9 @@ void Server::checkCommand(Client& client)
 			handlePRIVMSG(client, parameter);
 			return;
 		}
+		
 		else
-			sendSystemMsg(client, "421", " " + command + ERR_UNKNOWNCOMMAND); // if no command in this function is used
+			sendSystemMsg(client, "421", " " + command + ERR_UNKNOWNCOMMAND);
 	}
 }
 
@@ -697,7 +699,7 @@ void Server::handleKICK(const Client& client, const std::string& param)
 	{
 		std::cout << "on rentre ici\n" << std::endl;
 		sendSystemMsg(client, "403", " " + channelName + ERR_NOSUCHCHANNEL);
-        return;
+		return;
 	}
 
 	std::map<std::string, Channel>::iterator itChan = findChannel(channelName);
@@ -791,7 +793,7 @@ void Server::handleINVITE(const Client& client, const std::string& param)
 	if (targetChannel[0] != '#')
 	{
 		sendSystemMsg(client, "403", targetChannel + ERR_NOSUCHCHANNEL);
-        return;
+		return;
 	}
 	
 	if (!isNickExist(targetNickname))
@@ -843,22 +845,22 @@ void Server::RPL_INVITING(const Client& client, const std::string& guestName, in
 
 void Server::handleWHO(const Client& client, const std::string& param)
 {
-    std::string channelName = param;
-    std::map<std::string, Channel>::iterator it = _channels.find(channelName);
-    if (channelName.empty() || channelName[0] != '#' || it == _channels.end())
-    {
-        sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
-        return;
-    }
+	std::string channelName = param;
+	std::map<std::string, Channel>::iterator it = _channels.find(channelName);
+	if (channelName.empty() || channelName[0] != '#' || it == _channels.end())
+	{
+		sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
+		return;
+	}
 
-    // if (it == _channels.end())
-    // {
-    //     sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
-    //     return;
-    // }
+	// if (it == _channels.end())
+	// {
+	//     sendSystemMsg(client, "403", channelName + ERR_NOSUCHCHANNEL);
+	//     return;
+	// }
 
-    RPL_NAMREPLY(client, it->second);
-    RPL_ENDOFNAMES(client, it->second);
+	RPL_NAMREPLY(client, it->second);
+	RPL_ENDOFNAMES(client, it->second);
 }
 
 void Server::handleMODE(const Client& client, const std::string& param)
@@ -1084,10 +1086,10 @@ void Server::tMode(const Client& client, Channel& channel, const std::vector<std
 		operation = "+t";
 
 	if (params.size() < 2)
-    {
-        sendSystemMsg(client, "461", " MODE " + operation + ERR_NEEDMOREPARAMS);
-        return;
-    }
+	{
+		sendSystemMsg(client, "461", " MODE " + operation + ERR_NEEDMOREPARAMS);
+		return;
+	}
 
 	// check if already +t in channel
 	bool isRestricted = channel.getTopicRestriction();
@@ -1263,7 +1265,7 @@ void Server::handlePRIVMSG(Client& client, const std::string& param)
 		sendSystemMsg(client, "412", ERR_NOTEXTTOSEND);
 		return;
 	}
-	
+
 	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " PRIVMSG " + target + " :" + msg + "\r\n";
 	if (isChannel)
 		itChannel->second.broadcast(reply, client.getFd()); // broadcast(reply, exceptId) <- prevent to send to myself the reply
@@ -1274,57 +1276,59 @@ void Server::handlePRIVMSG(Client& client, const std::string& param)
 
 
 void Server::handleJOIN(Client& client, const std::string& param)
-{	
+{
 	const std::vector<std::string>& params = divideParams(param);
 	const std::string& channelName = params[0];
-	std::cout << "DEBUG1\n";
+	
+	for (size_t i = 0; i < params.size(); ++i)
+		std::cout << "params - " << params[i] << std::endl;
+	
 	if (!channelName.empty() && channelName[0] != '#')
 	{
 		sendSystemMsg(client, "403", + " " + channelName + ERR_NOSUCHCHANNEL);
 		return;
 	}
-	std::cout << "DEBUG2\n";
-	if (channelName.empty() || channelName == "#" || params.size() > 2)
+	
+	if (params.size() > 2 || channelName.empty() || channelName == "#")
 	{
 		sendSystemMsg(client, "461", " JOIN" ERR_NEEDMOREPARAMS);
+		// _cmd.second.clear();
 		return;
 	}
-	std::cout << "DEBUG3\n";
 	std::map<std::string, Channel>::iterator itChannel = findChannel(channelName);
 	
-    if (itChannel == _channels.end())
-		createChannel(channelName, client); // client will be added in the channel's ctor (in _members & _operators)
+	if (itChannel == _channels.end())
+	{
+		if (!createChannel(channelName, client)) // client will be added in the channel's ctor (in _members & _operators)
+			return;
+	}
 	else
 	{
-		std::cout << "DEBUG4\n";
 		if (itChannel->second.isMember(client.getFd()))
 			return;
-		std::cout << "DEBUG5\n";
+
 		if (!checkChannelPermissions(client, itChannel->second, params))
 			return;
-		std::cout << "DEBUG6\n";
+			
 		itChannel->second.addMember(client.getFd());
 	}
-	std::cout << "DEBUG7\n";
+	
 	client.joinChannel(channelName);
-	std::cout << "DEBUG8\n";
 	itChannel = findChannel(channelName);
-	std::cout << "DEBUG9\n";
+
+	Channel& channel = itChannel->second;
 	// +i is checked in checkChannelPermissions() and when a guest join a +i server , we must remove it from channel::_guests
-	if (itChannel->second.getInvitOnly())
-		itChannel->second.removeGuest(client.getFd());
-	std::cout << "DEBUG10\n";
+	if (channel.getInvitOnly())
+		channel.removeGuest(client.getFd());
+
 	const std::string reply = ":" + client.getNickname() + "!" + client.getUsername() + "@" + _name + " JOIN " + channelName + "\r\n";
-	std::cout << "DEBUG11\n";
-	itChannel->second.broadcast(reply);
-	std::cout << "DEBUG12\n";
-	if (itChannel->second.getTopic().empty())
-		RPL_NOTOPIC(client, itChannel->second);
+	channel.broadcast(reply);
+	if (channel.getTopic().empty())
+		RPL_NOTOPIC(client, channel);
 	else
-		RPL_TOPIC(client, itChannel->second);
-	std::cout << "DEBUG13\n";
+		RPL_TOPIC(client, channel);
+		
 	handleWHO(client, channelName);
-	std::cout << "DEBUG14 fin\n";
 }
 
 bool Server::checkChannelPermissions(const Client& client, const Channel& channel, const std::vector<std::string>& params) const
@@ -1359,19 +1363,22 @@ bool Server::checkChannelPermissions(const Client& client, const Channel& channe
 	return true;
 }
 
-void Server::createChannel(const std::string& channelName, const Client& currentClient)
+bool Server::createChannel(const std::string& channelName, const Client& currentClient)
 {
 	if (!parseJoinParams(_cmd.second))
 	{
 		sendSystemMsg(currentClient, "461", + " " + channelName + ERR_NEEDMOREPARAMS);
-		return;
+		return false;
 	}
+
 	Channel newChannel(channelName, currentClient.getFd());
 	_channels.insert(std::make_pair(channelName, newChannel));
+	return true;
 }
 
 void Server::extractCmd(const std::string& message)
 {
+	
 	size_t space = message.find(' ');
 	
 	if (space == std::string::npos)
@@ -1435,6 +1442,6 @@ void Server::RPL_NAMREPLY(const Client& client, const Channel& channel) const
 
 void Server::RPL_ENDOFNAMES(const Client& client, const Channel& channel) const
 {
-    std::string reply = ":" + _name + " 366 " + client.getNickname() + " " + channel.getName() + " :End of /NAMES list\r\n";
-    send(client.getFd(), reply.c_str(), reply.size(), 0);
+	std::string reply = ":" + _name + " 366 " + client.getNickname() + " " + channel.getName() + " :End of /NAMES list\r\n";
+	send(client.getFd(), reply.c_str(), reply.size(), 0);
 }

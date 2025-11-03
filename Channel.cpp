@@ -6,7 +6,7 @@
 /*   By: aldalmas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/15 15:01:24 by bbousaad          #+#    #+#             */
-/*   Updated: 2025/10/19 16:29:09 by aldalmas         ###   ########.fr       */
+/*   Updated: 2025/11/03 08:48:26 by aldalmas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,12 +95,20 @@ void Channel::removeOperator(int client_fd) {_operators.erase(client_fd);}
 void Channel::removeGuest(int client_fd) {_guests.erase(client_fd);}
 
 void Channel::broadcast(const std::string& msg, int except_fd) const
-{
-    for (std::set<int>::iterator it = _members.begin(); it != _members.end(); ++it)
+{    
+    std::cout << "DEBUG 1: " << std::endl;
+    if (_members.size() <= 0)
+        return;
+
+    const std::set<int> members = _members;
+    std::cout << &_members << " size=" << _members.size() << std::endl;
+
+    for (std::set<int>::iterator it = members.begin(); it != members.end(); ++it)
     {
+        std::cout << "DEBUG 3 "<< *it << std::endl;
         if (*it == except_fd)
             continue;
-
+            
         send(*it, msg.c_str(), msg.size(), 0);
     }
 }
